@@ -2359,3 +2359,41 @@ a.dashboard-card:hover {
     scroll-behavior: auto !important;
   }
 }
+
+/* ------------------------------------------------------- Error de interfaz */
+
+.error-screen {
+  max-width: 620px;
+  text-align: center;
+}
+
+.error-screen > svg {
+  color: var(--danger);
+  margin: 0 auto 1rem;
+}
+
+.error-screen .pet-detail-actions {
+  justify-content: center;
+}
+
+.error-screen-details {
+  margin-top: 2rem;
+  text-align: left;
+}
+
+.error-screen-details summary {
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--ink-muted);
+}
+
+.error-screen-details pre {
+  margin-top: 0.5rem;
+  padding: 0.85rem 1rem;
+  background: var(--surface-alt);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  overflow-x: auto;
+  white-space: pre-wrap;
+}
