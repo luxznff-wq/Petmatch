@@ -20,10 +20,9 @@ export function AuthProvider({ children }) {
   }, []);
 
   useEffect(() => {
-    if (!getToken()) {
-      setLoading(false);
-      return;
-    }
+    // Sin token no hay nada que revalidar: `loading` ya nace en false.
+    if (!getToken()) return undefined;
+
     let active = true;
     authApi
       .me()

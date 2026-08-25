@@ -41,7 +41,6 @@ function translateDatabaseError(error) {
  * mensaje; cualquier otro se responde como 500 genérico para no filtrar
  * detalles internos (§73: manejo seguro de errores).
  */
-// eslint-disable-next-line no-unused-vars -- Express identifica el handler por sus 4 argumentos.
 export function errorHandler(error, _req, res, _next) {
   const apiError =
     error instanceof ApiError

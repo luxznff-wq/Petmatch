@@ -2,6 +2,9 @@ import { useCallback, useEffect, useState } from 'react';
 import { favoritesApi } from '../services/api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 
+/** Conjunto vacío compartido: evita crear uno nuevo en cada render. */
+const NONE = new Set();
+
 /**
  * Conjunto de mascotas favoritas del adoptante en sesión.
  *
@@ -10,20 +13,25 @@ import { useAuth } from '../context/AuthContext.jsx';
  */
 export function useFavorites() {
   const { isAdopter } = useAuth();
-  const [ids, setIds] = useState(() => new Set());
+  const [loaded, setLoaded] = useState(() => new Set());
+
+  // Quien no es adoptante no tiene favoritos: se deriva en lugar de limpiar
+  // el estado desde un efecto, que provocaría un render en cascada.
+  const favoriteIds = isAdopter ? loaded : NONE;
 
   useEffect(() => {
-    if (!isAdopter) {
-      setIds(new Set());
-      return;
-    }
+    if (!isAdopter) return undefined;
+
     let active = true;
     favoritesApi
       .ids()
       .then((list) => {
-        if (active) setIds(new Set(list));
+        if (active) setLoaded(new Set(list));
       })
-      .catch(() => {});
+      .catch(() => {
+        // Un fallo al cargar favoritos no debe romper el listado.
+      });
+
     return () => {
       active = false;
     };
@@ -31,8 +39,8 @@ export function useFavorites() {
 
   const toggle = useCallback(
     async (petId) => {
-      const removing = ids.has(petId);
-      setIds((current) => {
+      const removing = favoriteIds.has(petId);
+      setLoaded((current) => {
         const next = new Set(current);
         if (removing) next.delete(petId);
         else next.add(petId);
@@ -43,7 +51,8 @@ export function useFavorites() {
         if (removing) await favoritesApi.remove(petId);
         else await favoritesApi.add(petId);
       } catch (error) {
-        setIds((current) => {
+        // Revierte el cambio optimista si la API lo rechaza.
+        setLoaded((current) => {
           const next = new Set(current);
           if (removing) next.add(petId);
           else next.delete(petId);
@@ -52,8 +61,8 @@ export function useFavorites() {
         throw error;
       }
     },
-    [ids]
+    [favoriteIds]
   );
 
-  return { favoriteIds: ids, isFavorite: (petId) => ids.has(petId), toggleFavorite: toggle };
+  return { favoriteIds, isFavorite: (petId) => favoriteIds.has(petId), toggleFavorite: toggle };
 }
