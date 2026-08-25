@@ -34,6 +34,9 @@ const isoDate = z
   .optional();
 
 export const petSchema = z.object({
+  // Sólo lo usa el administrador para publicar en nombre de un refugio; el
+  // refugio siempre publica en el suyo y el servicio ignora este campo.
+  shelterId: id.optional(),
   name: text(2, 100, 'El nombre'),
   species: z.enum(SPECIES, { message: 'Selecciona una especie válida' }),
   breed: optionalText(100, 'La raza'),

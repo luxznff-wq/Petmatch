@@ -2,32 +2,30 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Bell, CheckCheck } from 'lucide-react';
 import { notificationsApi } from '../../services/api.js';
+import { useAsync } from '../../hooks/useAsync.js';
 import { formatRelative } from '../../utils/format.js';
+
+/** Cada cuánto se refresca el contador de no leídas. */
+const POLL_INTERVAL = 60_000;
 
 /** Campana de notificaciones con contador de no leídas (§51, §76). */
 export default function NotificationBell() {
-  const [items, setItems] = useState([]);
-  const [unread, setUnread] = useState(0);
   const [open, setOpen] = useState(false);
   const containerRef = useRef(null);
 
-  async function load() {
-    try {
-      const data = await notificationsApi.list();
-      setItems(data.items ?? []);
-      setUnread(data.unread ?? 0);
-    } catch {
-      // Una campana que falla no debe romper la navegación.
-    }
-  }
+  // Un fallo al consultar las notificaciones no debe romper la navegación:
+  // el error se ignora y la campana simplemente se muestra vacía.
+  const { data, reload, setData } = useAsync(() => notificationsApi.list(), []);
+  const items = data?.items ?? [];
+  const unread = data?.unread ?? 0;
 
+  // Sondeo ligero: mantiene el contador al día sin abrir un websocket.
   useEffect(() => {
-    load();
-    // Sondeo ligero: mantiene el contador al día sin websockets.
-    const timer = setInterval(load, 60_000);
+    const timer = setInterval(reload, POLL_INTERVAL);
     return () => clearInterval(timer);
-  }, []);
+  }, [reload]);
 
+  // Cerrar al pulsar fuera del panel.
   useEffect(() => {
     if (!open) return undefined;
     const handleClick = (event) => {
@@ -39,8 +37,7 @@ export default function NotificationBell() {
 
   async function markAll() {
     await notificationsApi.markAllRead();
-    setUnread(0);
-    setItems((current) => current.map((item) => ({ ...item, read: true })));
+    setData({ items: items.map((item) => ({ ...item, read: true })), unread: 0 });
   }
 
   return (

@@ -1,6 +1,13 @@
 import { isPostgres, query, queryOne } from '../config/database.js';
 import { QueryBuilder } from '../utils/sql.js';
-import { clone, sameId, store, sequences, includesText } from './memory-store.js';
+import {
+  cascadeDeleteUser,
+  clone,
+  includesText,
+  sameId,
+  sequences,
+  store
+} from './memory-store.js';
 
 const SELECT_USER = `
   SELECT u.*, r.name AS role
@@ -143,9 +150,10 @@ export async function setStatus(id, status) {
 
 export async function remove(id) {
   if (!isPostgres) {
-    const index = store.users.findIndex((item) => sameId(item.id, id));
-    if (index < 0) return false;
-    store.users.splice(index, 1);
+    if (!store.users.some((item) => sameId(item.id, id))) return false;
+    // Replica el ON DELETE CASCADE del esquema para que ambos motores dejen
+    // el almacén en el mismo estado.
+    cascadeDeleteUser(id);
     return true;
   }
   const result = await query('DELETE FROM users WHERE id = $1', [Number(id) || 0]);

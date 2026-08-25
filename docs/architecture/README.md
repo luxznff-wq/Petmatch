@@ -116,6 +116,28 @@ Al registrar una adopción, las solicitudes rivales que seguían vivas se rechaz
 automáticamente y se notifica a sus autores, porque una mascota adoptada no puede
 seguir recibiendo solicitudes (§35.6).
 
+## Borrado y preservación del historial
+
+El esquema declara `ON DELETE CASCADE` en casi todas las claves foráneas, de modo
+que borrar una cuenta arrastra su refugio, las mascotas de ese refugio y las
+solicitudes asociadas. Eso plantea un riesgo: eliminar a un usuario podría
+destruir adopciones ya registradas, que son precisamente el historial que §38
+exige conservar.
+
+Por eso el servicio **se niega a eliminar una cuenta con adopciones registradas**
+y responde `409` sugiriendo suspenderla (§47). Suspender bloquea el acceso de
+inmediato y no pierde nada. La cascada sólo se ejecuta cuando no hay historial en
+juego: favoritos, solicitudes abiertas y mascotas sin adoptar.
+
+La auditoría es la excepción deliberada: `audit_logs.user_id` usa
+`ON DELETE SET NULL` y la tabla guarda además el correo del actor, así que la
+evidencia de quién hizo qué sobrevive al borrado de la cuenta (§52).
+
+En modo memoria las mismas cascadas están implementadas a mano en
+`models/memory-store.js`, y hay pruebas que comprueban que ambos motores dejan el
+almacén en el mismo estado. Sin ellas, el modo memoria borraba sólo la fila del
+usuario y dejaba huérfanos su refugio y sus mascotas.
+
 ## Seguridad
 
 | Medida | Implementación |

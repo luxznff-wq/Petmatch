@@ -1,7 +1,14 @@
 import { isPostgres, query, queryOne, transaction } from '../config/database.js';
 import { QueryBuilder } from '../utils/sql.js';
 import { resolveAge } from '../utils/age.js';
-import { clone, includesText, sameId, sequences, store } from './memory-store.js';
+import {
+  cascadeDeletePet,
+  clone,
+  includesText,
+  sameId,
+  sequences,
+  store
+} from './memory-store.js';
 
 /** Campos booleanos de `pet_attributes` expuestos como camelCase. */
 export const ATTRIBUTE_FIELDS = Object.freeze({
@@ -397,12 +404,10 @@ export async function setStatus(id, status) {
 
 export async function remove(id) {
   if (!isPostgres) {
-    const index = store.pets.findIndex((item) => sameId(item.id, id));
-    if (index < 0) return false;
-    const [pet] = store.pets.splice(index, 1);
-    store.petImages = store.petImages.filter((item) => !sameId(item.petId, pet.id));
-    store.petAttributes = store.petAttributes.filter((item) => !sameId(item.petId, pet.id));
-    store.favorites = store.favorites.filter((item) => !sameId(item.petId, pet.id));
+    if (!store.pets.some((item) => sameId(item.id, id))) return false;
+    // Replica el ON DELETE CASCADE del esquema: imágenes, atributos,
+    // favoritos y solicitudes asociadas a la mascota.
+    cascadeDeletePet(id);
     return true;
   }
   const result = await query('DELETE FROM pets WHERE id = $1', [Number(id) || 0]);

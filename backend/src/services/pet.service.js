@@ -13,7 +13,7 @@ const UNAVAILABLE_STATUSES = ['ADOPTADA', 'NO_DISPONIBLE'];
 
 export async function list(query) {
   const pagination = resolvePagination(query);
-  const { page, limit, ...filters } = query;
+  const { page: _page, limit: _limit, ...filters } = query;
   const { data, total } = await petModel.list(filters, pagination);
   return { data, total, page: pagination.page, limit: pagination.limit };
 }
@@ -50,9 +50,14 @@ export async function create(user, input) {
   // `shelterId`; el refugio siempre publica en el suyo.
   let shelterId;
   if (access.isAdmin(user)) {
-    shelterId = input.shelterId;
-    if (!shelterId) throw ApiError.badRequest('Indica el refugio al que pertenece la mascota');
-    if (!(await shelterModel.findById(shelterId))) throw ApiError.notFound('El refugio no existe');
+    if (!input.shelterId) throw ApiError.badRequest('Indica el refugio al que pertenece la mascota');
+    const shelter = await shelterModel.findById(input.shelterId);
+    if (!shelter) throw ApiError.notFound('El refugio no existe');
+    // §88.13: ni siquiera el administrador publica en un refugio suspendido.
+    if (shelter.status === 'SUSPENDIDO') {
+      throw ApiError.forbidden('El refugio está suspendido y no puede recibir publicaciones');
+    }
+    shelterId = shelter.id;
   } else {
     shelterId = (await access.requireOperationalShelter(user)).id;
   }

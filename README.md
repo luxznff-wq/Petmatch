@@ -103,6 +103,7 @@ automatizadas, uso profesional de Git/GitHub y despliegue.
 | Seguridad | Helmet · CORS · express-rate-limit |
 | Documentación | OpenAPI 3.0.3 · Swagger UI |
 | Testing | `node:test` + Supertest (backend) · Vitest + Testing Library (frontend) |
+| Calidad | ESLint 9 (flat config) + plugins de React |
 | Infraestructura | Docker Compose · Render · Vercel |
 
 > **Nota sobre el runner de pruebas.** La especificación sugiere Jest; el proyecto
@@ -228,7 +229,8 @@ dentro de su propia transacción. El detalle del modelo está en
 | `npm run dev:web` | Sólo el frontend (`http://localhost:5173`) |
 | `npm run build` | Compila el frontend en `frontend/dist` |
 | `npm start` | Arranca la API en modo producción |
-| `npm test` | Ejecuta las pruebas de backend y frontend |
+| `npm test` | Lint + pruebas de backend y frontend |
+| `npm run lint` | Analiza el código con ESLint |
 
 ## API REST
 
@@ -295,20 +297,26 @@ para demostrar el flujo de aprobación desde el panel administrativo.
 > El rol `ADMINISTRADOR` no se puede obtener desde el registro público: sólo lo
 > crea el seed. Es una decisión de seguridad, no una limitación.
 
-## Testing
+## Calidad y testing
 
 ```bash
-npm test           # backend + frontend
-npm run test:api   # 86 pruebas de API
+npm test           # lint + 95 pruebas de API + 25 de interfaz
+npm run lint       # ESLint sobre backend y frontend
+npm run test:api   # 95 pruebas de API
 npm run test:web   # 25 pruebas de interfaz
 ```
 
-**Backend (86 pruebas).** Autenticación, roles y permisos, CRUD de mascotas,
+**Linting.** ESLint 9 en formato plano ([`eslint.config.js`](eslint.config.js)) con
+reglas compartidas más `eslint-plugin-react` y `eslint-plugin-react-hooks` para el
+frontend. `npm test` lo ejecuta primero: si el lint falla, no se corren las pruebas.
+
+**Backend (95 pruebas).** Autenticación, roles y permisos, CRUD de mascotas,
 búsqueda/filtros/orden/paginación, galería, favoritos, flujo completo de adopción,
-transiciones inválidas, notificaciones, auditoría, reportes y contrato de la API.
-Incluye los casos negativos que pide la especificación: email duplicado, contraseña
-incorrecta, token inválido, mascota inexistente, mascota adoptada, solicitud
-duplicada, usuario sin permisos y datos incompletos.
+transiciones inválidas, notificaciones, auditoría, reportes, contrato de la API,
+caminos administrativos y borrado en cascada. Incluye los casos negativos que pide
+la especificación: email duplicado, contraseña incorrecta, token inválido, mascota
+inexistente, mascota adoptada, solicitud duplicada, usuario sin permisos y datos
+incompletos.
 
 **Frontend (25 pruebas).** Componentes reutilizables, tarjetas de mascota, tabla de
 datos, paginación, protección de rutas y las páginas de exploración y acceso.
@@ -389,6 +397,7 @@ petmatch/
 ├── docs/                  # api/ · database/ · architecture/ · deployment
 ├── docker-compose.yml
 ├── render.yaml
+├── eslint.config.js
 ├── .env.example
 └── README.md
 ```

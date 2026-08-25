@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ImagePlus, Trash2 } from 'lucide-react';
 import { petsApi } from '../../services/api.js';
@@ -27,18 +27,21 @@ export default function PetFormPage() {
   const toast = useToast();
 
   const pet = useAsync(() => (isEdit ? petsApi.get(id) : Promise.resolve(null)), [id]);
-  const [attributes, setAttributes] = useState({});
+  const [edited, setEdited] = useState(null);
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
   const [newImage, setNewImage] = useState('');
 
-  // Al cargar una mascota existente se copian sus características al estado.
-  useEffect(() => {
-    if (pet.data?.attributes) setAttributes(pet.data.attributes);
-  }, [pet.data]);
+  const current = pet.data;
+  // Mientras no se toque ninguna casilla se muestran las características
+  // guardadas. Derivarlas evita copiar los datos cargados a estado desde un
+  // efecto, que dispararía un render extra en cada carga.
+  const attributes = edited ?? current?.attributes ?? {};
+
+  const toggleAttribute = (key, checked) =>
+    setEdited({ ...attributes, [key]: checked });
 
   const fieldError = (field) => error?.fieldError?.(field);
-  const current = pet.data;
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -234,12 +237,7 @@ export default function PetFormPage() {
                 <input
                   type="checkbox"
                   checked={attributes[attribute.key] === true}
-                  onChange={(event) =>
-                    setAttributes((current) => ({
-                      ...current,
-                      [attribute.key]: event.target.checked
-                    }))
-                  }
+                  onChange={(event) => toggleAttribute(attribute.key, event.target.checked)}
                 />
                 {attribute.label}
               </label>

@@ -262,8 +262,7 @@ textarea {
   font-size: 0.9rem;
 }
 
-.navbar-toggle,
-.navbar-overlay {
+.navbar-toggle {
   display: none;
   background: none;
   border: 0;

@@ -5,7 +5,6 @@ import { petsApi, sheltersApi } from '../../services/api.js';
 import { useAsync } from '../../hooks/useAsync.js';
 import { useToast } from '../../context/ToastContext.jsx';
 import DataTable from '../../components/ui/DataTable.jsx';
-import Badge from '../../components/ui/Badge.jsx';
 import Button from '../../components/ui/Button.jsx';
 import Select from '../../components/ui/Select.jsx';
 import Pagination from '../../components/ui/Pagination.jsx';
