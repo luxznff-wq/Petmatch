@@ -300,26 +300,27 @@ para demostrar el flujo de aprobación desde el panel administrativo.
 ## Calidad y testing
 
 ```bash
-npm test           # lint + 95 pruebas de API + 25 de interfaz
+npm test           # lint + 105 pruebas de API + 33 de interfaz
 npm run lint       # ESLint sobre backend y frontend
-npm run test:api   # 95 pruebas de API
-npm run test:web   # 25 pruebas de interfaz
+npm run test:api   # 105 pruebas de API
+npm run test:web   # 33 pruebas de interfaz
 ```
 
 **Linting.** ESLint 9 en formato plano ([`eslint.config.js`](eslint.config.js)) con
 reglas compartidas más `eslint-plugin-react` y `eslint-plugin-react-hooks` para el
 frontend. `npm test` lo ejecuta primero: si el lint falla, no se corren las pruebas.
 
-**Backend (95 pruebas).** Autenticación, roles y permisos, CRUD de mascotas,
+**Backend (105 pruebas).** Autenticación, roles y permisos, CRUD de mascotas,
 búsqueda/filtros/orden/paginación, galería, favoritos, flujo completo de adopción,
 transiciones inválidas, notificaciones, auditoría, reportes, contrato de la API,
-caminos administrativos y borrado en cascada. Incluye los casos negativos que pide
+caminos administrativos, borrado en cascada, búsqueda de texto y límites de peticiones. Incluye los casos negativos que pide
 la especificación: email duplicado, contraseña incorrecta, token inválido, mascota
 inexistente, mascota adoptada, solicitud duplicada, usuario sin permisos y datos
 incompletos.
 
-**Frontend (25 pruebas).** Componentes reutilizables, tarjetas de mascota, tabla de
-datos, paginación, protección de rutas y las páginas de exploración y acceso.
+**Frontend (33 pruebas).** Componentes reutilizables, tarjetas de mascota, tabla de
+datos, paginación, protección de rutas, accesibilidad del diálogo modal (retención
+del foco), pantalla de error y las páginas de exploración y acceso.
 
 Las pruebas de backend corren contra el almacén en memoria por defecto. Para
 verificarlas contra PostgreSQL real:
