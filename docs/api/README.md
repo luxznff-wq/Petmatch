@@ -120,6 +120,10 @@ Público. Perfil completo con atributos, galería y datos del refugio.
 
 `409` si el refugio aún no tiene perfil · `403` si está pendiente o suspendido.
 
+Un **administrador** puede publicar en nombre de un refugio añadiendo `shelterId`
+al cuerpo; sin él recibe `400`. Cuando quien publica es un refugio, `shelterId` se
+ignora: siempre publica en el suyo.
+
 ### `PUT /pets/:id` · `PATCH /pets/:id/status` · `DELETE /pets/:id` 🔒
 
 Sólo el refugio propietario o un administrador. Al pasar una mascota a `ADOPTADA`
@@ -272,6 +276,11 @@ notifica a sus autores. La solicitud debe estar `APROBADA` (`409` si no lo está
 | `DELETE /users/:id` | ADMINISTRADOR |
 
 Un administrador no puede suspender ni eliminar su propia cuenta (`409`).
+
+El borrado arrastra en cascada el refugio del usuario, sus mascotas y las
+solicitudes asociadas. Por eso se rechaza con `409` cuando la cuenta tiene
+**adopciones registradas**: el historial (§38) no debe desaparecer al borrar una
+cuenta. En esos casos la vía correcta es suspenderla.
 
 ---
 
