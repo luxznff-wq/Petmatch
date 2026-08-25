@@ -1,0 +1,59 @@
+# Entorno local completo de PetMatch.
+#   docker compose up -d db      -> sólo PostgreSQL (recomendado para desarrollo)
+#   docker compose --profile full up --build  -> base de datos + API + frontend
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: petmatch-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: petmatch
+    ports:
+      - '5432:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d petmatch']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    profiles: ['full']
+    build:
+      context: .
+      dockerfile: docker/backend.Dockerfile
+    container_name: petmatch-api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/petmatch
+      JWT_SECRET: ${JWT_SECRET:-secreto-solo-para-desarrollo-local}
+      FRONTEND_URL: http://localhost:8080
+    ports:
+      - '4000:4000'
+    # Aplica migraciones y datos de demostración antes de arrancar.
+    command: sh -c "npm run db:migrate -w backend && npm run db:seed -w backend; npm run start -w backend"
+
+  web:
+    profiles: ['full']
+    build:
+      context: .
+      dockerfile: docker/frontend.Dockerfile
+      args:
+        VITE_API_URL: http://localhost:4000/api
+    container_name: petmatch-web
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - '8080:80'
+
+volumes:
+  pgdata:

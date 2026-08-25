@@ -1,0 +1,31 @@
+# Blueprint de Render: API de PetMatch + PostgreSQL gestionado.
+# Importar desde: New > Blueprint
+services:
+  - type: web
+    name: petmatch-api
+    runtime: node
+    plan: free
+    rootDir: .
+    buildCommand: npm ci
+    startCommand: npm run start -w backend
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: petmatch-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      # Se define a mano con el dominio final del frontend: CORS depende de ello.
+      - key: FRONTEND_URL
+        sync: false
+      - key: API_URL
+        sync: false
+
+databases:
+  - name: petmatch-db
+    databaseName: petmatch
+    user: petmatch
+    plan: free

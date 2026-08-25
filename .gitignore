@@ -1,0 +1,29 @@
+# Dependencias
+node_modules/
+
+# Compilaciones
+dist/
+build/
+.vite/
+
+# Entorno y secretos
+.env
+.env.local
+.env.*.local
+
+# Registros y caché
+*.log
+npm-debug.log*
+coverage/
+.nyc_output/
+.cache/
+
+# Editores y sistema operativo
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Datos locales de PostgreSQL levantados con Docker
+docker/pgdata/
