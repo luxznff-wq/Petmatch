@@ -1,4 +1,23 @@
-import 'dotenv/config';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import dotenv from 'dotenv';
+
+const here = dirname(fileURLToPath(import.meta.url));
+
+// Las pruebas nunca heredan el `.env` del desarrollador: si lo hicieran,
+// `npm test` se conectaría a la base de datos de desarrollo y la vaciaría al
+// limpiar entre casos. En modo test sólo cuentan las variables que se pasen
+// explícitamente por la línea de comandos.
+if (process.env.NODE_ENV !== 'test') {
+  // El archivo se busca a partir de la ubicación de este módulo y no del
+  // directorio de trabajo: los scripts del workspace se ejecutan desde
+  // `backend/`, pero el `.env` documentado vive en la raíz del monorepo.
+  // `backend/.env` tiene prioridad por si se quiere un entorno propio.
+  dotenv.config({
+    path: [resolve(here, '../../.env'), resolve(here, '../../../.env')],
+    quiet: true
+  });
+}
 
 const REQUIRED_IN_PRODUCTION = ['DATABASE_URL', 'JWT_SECRET'];
 
