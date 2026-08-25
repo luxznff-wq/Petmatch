@@ -13,7 +13,7 @@ const TIMING_GUARD_HASH = '$2b$04$714GUoh/nZpXbiar2xo/zeAuo3.3hR13d2zttTghCBM62F
 /** Proyección pública del usuario: nunca incluye el hash de la contraseña. */
 export function toPublicUser(user) {
   if (!user) return null;
-  const { passwordHash, ...rest } = user;
+  const { passwordHash: _passwordHash, ...rest } = user;
   return rest;
 }
 

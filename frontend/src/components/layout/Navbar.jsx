@@ -46,12 +46,17 @@ export default function Navbar() {
           className="navbar-toggle"
           onClick={() => setMenuOpen((open) => !open)}
           aria-expanded={menuOpen}
-          aria-label="Abrir menú de navegación"
+          aria-controls="navegacion-principal"
+          aria-label={menuOpen ? 'Cerrar menú de navegación' : 'Abrir menú de navegación'}
         >
-          {menuOpen ? <Menu size={20} /> : <Menu size={20} />}
+          {menuOpen ? <X size={20} aria-hidden="true" /> : <Menu size={20} aria-hidden="true" />}
         </button>
 
-        <nav className={`navbar-links ${menuOpen ? 'is-open' : ''}`} aria-label="Navegación principal">
+        <nav
+          id="navegacion-principal"
+          className={`navbar-links ${menuOpen ? 'is-open' : ''}`}
+          aria-label="Navegación principal"
+        >
           {PUBLIC_LINKS.map((link) => (
             <NavLink
               key={link.to}
@@ -99,16 +104,6 @@ export default function Navbar() {
           </div>
         </nav>
 
-        {menuOpen && (
-          <button
-            type="button"
-            className="navbar-overlay"
-            onClick={close}
-            aria-label="Cerrar menú"
-          >
-            <X size={20} aria-hidden="true" />
-          </button>
-        )}
       </div>
     </header>
   );
