@@ -1,11 +1,17 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import { rateLimit } from 'express-rate-limit';
+
 import swaggerUi from 'swagger-ui-express';
 
 import { env } from './config/env.js';
 import { openapi } from './docs/openapi.js';
+import {
+  adoptionRequestLimiter,
+  authLimiter,
+  generalLimiter,
+  limitWrites
+} from './middleware/rate-limit.js';
 import apiRoutes from './routes/index.js';
 import { errorHandler, notFoundHandler } from './middleware/error-handler.js';
 
@@ -37,20 +43,17 @@ app.use(
 
 app.use(express.json({ limit: '1mb' }));
 
-// Limita los intentos de registro/login para frenar la fuerza bruta.
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  limit: env.isTest ? 1000 : 30,
-  standardHeaders: 'draft-8',
-  legacyHeaders: false,
-  message: { success: false, message: 'Demasiados intentos. Inténtalo nuevamente más tarde.' }
-});
-app.use('/api/auth/login', authLimiter);
-app.use('/api/auth/register', authLimiter);
-
-// Documentación interactiva de la API (§94).
+// Documentación interactiva de la API (§94). Va antes de los límites: es
+// una página estática y consultarla no debe consumir la cuota del visitante.
 app.get('/api/docs/openapi.json', (_req, res) => res.json(openapi));
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(openapi, { customSiteTitle: 'PetMatch API' }));
+
+// Límites por IP, del más específico al más general (§73).
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
+app.use('/api/adoptions/requests', adoptionRequestLimiter);
+app.use('/api', limitWrites);
+app.use('/api', generalLimiter);
 
 app.use('/api', apiRoutes);
 
