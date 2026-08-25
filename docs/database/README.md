@@ -181,6 +181,29 @@ calcula el grupo etario y la etiqueta legible; si no, respeta lo declarado a man
 Se guarda el valor calculado en lugar de derivarlo en cada consulta para poder
 indexarlo y filtrar por él sin coste.
 
+**`pets.search_text`: la búsqueda en una sola columna.** El §14 pide buscar por
+nombre, raza, ciudad y refugio. La primera versión lo hacía con un OR sobre el
+JOIN:
+
+```sql
+WHERE p.name ILIKE ? OR p.breed ILIKE ? OR p.city ILIKE ? OR s.name ILIKE ?
+```
+
+Esa consulta **no puede usar ningún índice**: al abarcar el OR dos tablas, el
+planificador tiene que recorrer `pets` entera y evaluar la condición después de
+unir. Medido sobre 200.000 mascotas daba un *Parallel Seq Scan* de **67 ms**.
+
+La solución es una columna desnormalizada en `pets` que concentra todo el texto
+buscable —incluido el nombre del refugio—, en minúsculas y sin acentos, mantenida
+por dos triggers: uno en `pets` y otro en `shelters` para cuando un refugio cambia
+de nombre. Con un índice GIN de trigramas sobre ella, la misma búsqueda pasa a un
+*Bitmap Index Scan* de **3,6 ms**, y deja de crecer con el tamaño de la tabla.
+
+Usar `unaccent` no es cosmético: iguala el comportamiento con el del modo memoria,
+que ya comparaba sin acentos. Sin él, buscar "peru" no encontraba "Huellitas Perú"
+en PostgreSQL pero sí en memoria — justo la clase de divergencia que la
+arquitectura pretende evitar.
+
 **Auditoría con correo desnormalizado.** `audit_logs` guarda `user_email` además de
 `user_id`, y la clave foránea usa `ON DELETE SET NULL`: si una cuenta se elimina, la
 evidencia de qué hizo sigue siendo legible.
@@ -197,6 +220,7 @@ depender de que la aplicación se acuerde de actualizarla.
 Además de las claves primarias y únicas, se indexa lo que realmente se filtra:
 
 - `pets`: `status`, `lower(species)`, `lower(city)`, `shelter_id`, `created_at DESC`
+- `pets.search_text`: GIN de trigramas para la búsqueda de texto libre
 - `shelters`: `status`, `lower(city)`
 - `users`: `role_id`, `status`
 - `favorites`: `(user_id, created_at DESC)`, `pet_id`
@@ -213,6 +237,7 @@ Además de las claves primarias y únicas, se indexa lo que realmente se filtra:
 | `003_adoptions.sql` | `favorites`, `adoption_requests`, `adoption_interviews`, `adoptions` |
 | `004_activity.sql` | `notifications`, `audit_logs` |
 | `005_indexes_and_triggers.sql` | Índices y triggers de mantenimiento |
+| `006_search_indexes.sql` | Columna `search_text`, triggers e índices GIN de búsqueda |
 
 El ejecutor (`backend/src/scripts/migrate.js`) registra cada archivo aplicado en
 `schema_migrations` y envuelve cada uno en su propia transacción. Volver a
