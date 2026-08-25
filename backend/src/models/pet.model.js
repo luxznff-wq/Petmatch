@@ -5,6 +5,7 @@ import {
   cascadeDeletePet,
   clone,
   includesText,
+  normalizeText,
   sameId,
   sequences,
   store
@@ -169,11 +170,14 @@ export async function list(filters, pagination) {
           ([key, value]) => value !== true || pet.attributes[key] === true
         )
       )
+      // Mismo texto buscable que la columna `search_text` de PostgreSQL.
       .filter((pet) =>
         !search
           ? true
           : includesText(
-              `${pet.name} ${pet.breed ?? ''} ${pet.city} ${pet.shelterName ?? ''}`,
+              [pet.name, pet.breed, pet.city, pet.region, pet.shelterName]
+                .filter(Boolean)
+                .join(' '),
               search
             )
       );
@@ -185,13 +189,11 @@ export async function list(filters, pagination) {
 
   const builder = new QueryBuilder();
   if (search) {
-    builder.where(
-      '(p.name ILIKE ? OR p.breed ILIKE ? OR p.city ILIKE ? OR s.name ILIKE ?)',
-      `%${search}%`,
-      `%${search}%`,
-      `%${search}%`,
-      `%${search}%`
-    );
+    // `search_text` concentra nombre, raza, ciudad, región y refugio en una
+    // sola columna sin acentos (migración 006). Buscar sobre una única tabla
+    // permite que el índice GIN de trigramas resuelva el comodín inicial;
+    // repartir el OR entre `pets` y `shelters` forzaba un Seq Scan.
+    builder.where('p.search_text LIKE ?', `%${normalizeText(search)}%`);
   }
   builder.whereIfPresent('LOWER(p.species) = LOWER(?)', species);
   builder.whereIfPresent('p.sex = ?', sex);
