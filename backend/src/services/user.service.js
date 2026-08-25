@@ -1,6 +1,8 @@
 import { ApiError } from '../utils/api-error.js';
 import { resolvePagination } from '../utils/pagination.js';
 import * as userModel from '../models/user.model.js';
+import * as shelterModel from '../models/shelter.model.js';
+import * as adoptionModel from '../models/adoption.model.js';
 import * as auditModel from '../models/audit.model.js';
 import * as access from './access.service.js';
 import { toPublicUser } from './auth.service.js';
@@ -63,12 +65,32 @@ export async function setStatus(actor, id, status) {
   return toPublicUser(updated);
 }
 
+/**
+ * Elimina una cuenta (§56).
+ *
+ * El borrado arrastra en cascada el refugio, sus mascotas y las solicitudes
+ * asociadas. Por eso se niega cuando hay adopciones registradas: el historial
+ * (§38) y la trazabilidad (§52) no deben desaparecer porque se borre una
+ * cuenta. En esos casos la acción correcta es suspenderla (§47).
+ */
 export async function remove(actor, id) {
   if (Number(actor.id) === Number(id)) {
     throw ApiError.conflict('No puedes eliminar tu propia cuenta de administrador');
   }
   const user = await userModel.findById(id);
   if (!user) throw ApiError.notFound('El usuario no existe');
+
+  const scope =
+    user.role === 'REFUGIO'
+      ? { role: 'REFUGIO', shelterId: (await shelterModel.findByOwner(user.id))?.id ?? -1 }
+      : { role: 'ADOPTANTE', userId: user.id };
+  const { total: adoptions } = await adoptionModel.list({ scope }, { page: 1, limit: 1 });
+
+  if (adoptions > 0) {
+    throw ApiError.conflict(
+      'Esta cuenta tiene adopciones registradas y no puede eliminarse. Suspéndela para bloquear su acceso sin perder el historial.'
+    );
+  }
 
   await userModel.remove(id);
   await auditModel.record({
