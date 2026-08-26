@@ -227,10 +227,27 @@ export async function create(userId, data) {
  * en la MISMA transacción (§22, §35.10). El mapa `petStatus` lo decide el
  * servicio, que es quien conoce las reglas.
  */
-export async function transition(id, status, { petStatus = null, reviewNotes } = {}) {
+/**
+ * Cambia el estado de la solicitud y sincroniza el de la mascota en la MISMA
+ * operación (§22, §35.10).
+ *
+ * `expectedStatus` convierte la escritura en un compare-and-swap: sólo cambia
+ * si la solicitud sigue en el estado que leyó quien decidió la transición.
+ * Sin esto, dos peticiones simultáneas —aprobar y rechazar, por ejemplo—
+ * leían el mismo estado, ambas se daban por válidas y el adoptante recibía
+ * las dos notificaciones contradictorias.
+ *
+ * Devuelve `null` si otra operación se adelantó; quien llama lo traduce a un
+ * conflicto.
+ */
+export async function transition(id, status, { expectedStatus = null, petStatus = null, reviewNotes } = {}) {
   if (!isPostgres) {
     const request = store.requests.find((item) => sameId(item.id, id));
     if (!request) return null;
+    // Aunque JavaScript sea de un solo hilo, entre la lectura del servicio y
+    // esta escritura hay `await`, así que dos peticiones pueden entrelazarse.
+    if (expectedStatus && request.status !== expectedStatus) return null;
+
     request.status = status;
     request.updatedAt = new Date().toISOString();
     if (reviewNotes !== undefined) request.reviewNotes = reviewNotes;
@@ -245,8 +262,9 @@ export async function transition(id, status, { petStatus = null, reviewNotes } =
     const { rows } = await client.query(
       `UPDATE adoption_requests
           SET status = $2, review_notes = COALESCE($3, review_notes)
-        WHERE id = $1 RETURNING id, pet_id`,
-      [Number(id), status, reviewNotes ?? null]
+        WHERE id = $1 AND ($4::request_status IS NULL OR status = $4)
+        RETURNING id, pet_id`,
+      [Number(id), status, reviewNotes ?? null, expectedStatus]
     );
     if (rows.length === 0) return null;
     if (petStatus) {
@@ -257,6 +275,7 @@ export async function transition(id, status, { petStatus = null, reviewNotes } =
 
   return updatedId == null ? null : findById(updatedId);
 }
+
 
 /**
  * Solicitudes vivas de una mascota, excluyendo opcionalmente una.
