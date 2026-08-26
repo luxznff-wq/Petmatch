@@ -1691,13 +1691,37 @@ legend {
   font-weight: 600;
 }
 
-.dashboard-back {
+.dashboard-footer {
   margin-top: auto;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+  display: grid;
+  gap: 0.6rem;
+}
+
+.dashboard-back {
   display: flex;
   align-items: center;
   gap: 0.4rem;
   font-size: 0.88rem;
   color: var(--ink-muted);
+}
+
+.dashboard-legal {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  color: var(--ink-muted);
+}
+
+.dashboard-legal a {
+  color: var(--ink-muted);
+}
+
+.dashboard-legal a:hover {
+  color: var(--ink);
 }
 
 .dashboard-main {
