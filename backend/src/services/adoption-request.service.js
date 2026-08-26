@@ -76,6 +76,22 @@ async function requireVisibleRequest(user, id) {
 }
 
 /**
+ * Como `requireVisibleRequest`, pero además exige que el refugio esté
+ * operativo.
+ *
+ * Consultar y actuar son cosas distintas: un refugio suspendido puede seguir
+ * viendo sus solicitudes, pero no avanzarlas, agendar entrevistas ni cerrar
+ * adopciones (§41, §88.13). Sin esta comprobación la suspensión sólo
+ * bloqueaba la gestión de mascotas y dejaba abierto todo el flujo de
+ * adopción, que es justamente lo que hay que detener.
+ */
+async function requireActionableRequest(user, id) {
+  const request = await requireVisibleRequest(user, id);
+  if (user.role === 'REFUGIO') await access.requireOperationalShelter(user);
+  return request;
+}
+
+/**
  * Crea una solicitud aplicando todas las reglas de §35:
  * usuario autenticado, mascota existente y disponible, formulario completo
  * (lo garantiza el validador) y sin duplicados activos.
@@ -118,7 +134,7 @@ async function resolveShelterOwnerId(shelterId) {
  * (§45). Ajusta el estado de la mascota y avisa al adoptante.
  */
 export async function changeStatus(user, id, { status, reviewNotes }) {
-  const request = await requireVisibleRequest(user, id);
+  const request = await requireActionableRequest(user, id);
 
   if (status === 'CANCELADA') {
     throw ApiError.forbidden('Solo el adoptante puede cancelar su solicitud');
@@ -200,5 +216,5 @@ function notifyStatusChange(request, status) {
   return notify(request.userId, message, `/mis-solicitudes/${request.id}`);
 }
 
-/** Reutilizado por los servicios de entrevistas y adopciones. */
-export { requireVisibleRequest };
+/** Reutilizados por los servicios de entrevistas y adopciones. */
+export { requireActionableRequest, requireVisibleRequest };

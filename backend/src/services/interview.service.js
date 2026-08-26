@@ -2,7 +2,7 @@ import { ApiError } from '../utils/api-error.js';
 import * as interviewModel from '../models/interview.model.js';
 import * as auditModel from '../models/audit.model.js';
 import * as access from './access.service.js';
-import { requireVisibleRequest } from './adoption-request.service.js';
+import { requireActionableRequest, requireVisibleRequest } from './adoption-request.service.js';
 import { messages, notify } from './notification.service.js';
 
 /**
@@ -27,8 +27,15 @@ export async function listForUser(user) {
   });
 }
 
+/** Una entrevista no puede quedar agendada en el pasado (§36). */
+function assertFutureDate(scheduledAt) {
+  if (new Date(scheduledAt).getTime() < Date.now()) {
+    throw ApiError.unprocessable('La entrevista no puede programarse en el pasado');
+  }
+}
+
 export async function schedule(user, requestId, input) {
-  const request = await requireVisibleRequest(user, requestId);
+  const request = await requireActionableRequest(user, requestId);
   if (user.role === 'ADOPTANTE') {
     throw ApiError.forbidden('Solo el refugio puede programar entrevistas');
   }
@@ -36,9 +43,7 @@ export async function schedule(user, requestId, input) {
   if (request.status !== 'ENTREVISTA') {
     throw ApiError.conflict('La solicitud debe estar en estado ENTREVISTA para agendar');
   }
-  if (new Date(input.scheduledAt).getTime() < Date.now()) {
-    throw ApiError.unprocessable('La entrevista no puede programarse en el pasado');
-  }
+  assertFutureDate(input.scheduledAt);
 
   const interview = await interviewModel.create(request.id, input);
   await notify(
@@ -62,10 +67,13 @@ export async function update(user, interviewId, input) {
 
   // Reusar la comprobación de la solicitud garantiza el mismo criterio de
   // propiedad que en el resto del flujo.
-  await requireVisibleRequest(user, interview.requestId);
+  await requireActionableRequest(user, interview.requestId);
   if (user.role === 'ADOPTANTE') {
     throw ApiError.forbidden('Solo el refugio puede registrar el resultado de la entrevista');
   }
+  // Reprogramar tiene la misma regla que programar: crear una entrevista en
+  // el pasado se rechazaba, pero moverla ahí se aceptaba sin más.
+  if (input.scheduledAt !== undefined) assertFutureDate(input.scheduledAt);
 
   const updated = await interviewModel.update(interview.id, input);
   if (input.result && input.result !== interview.result) {
