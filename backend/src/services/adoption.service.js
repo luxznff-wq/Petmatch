@@ -71,9 +71,13 @@ async function closeCompetingRequests(request) {
   });
 
   for (const competitor of competitors) {
-    await requestModel.transition(competitor.id, 'RECHAZADA', {
+    const cerrada = await requestModel.transition(competitor.id, 'RECHAZADA', {
+      expectedStatus: competitor.status,
       reviewNotes: 'La mascota fue adoptada por otro solicitante.'
     });
+    // Si alguien la movió mientras tanto, no se avisa de un cambio que no se hizo.
+    if (!cerrada) continue;
+
     await notify(
       competitor.userId,
       messages.requestRejected(request.petName),
