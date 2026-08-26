@@ -50,9 +50,24 @@ export default function DashboardLayout({ title, links }) {
           ))}
         </nav>
 
-        <Link to="/" className="dashboard-back">
-          <ArrowLeft size={16} aria-hidden="true" /> Volver a PetMatch
-        </Link>
+        <div className="dashboard-footer">
+          <Link to="/" className="dashboard-back">
+            <ArrowLeft size={16} aria-hidden="true" /> Volver a PetMatch
+          </Link>
+
+          {/* Los paneles no llevan el pie del sitio, así que sin estos
+              enlaces quien tiene sesión iniciada se queda sin ninguna vía
+              hacia los documentos legales. */}
+          <nav className="dashboard-legal" aria-label="Documentos legales">
+            <Link to="/terminos" onClick={() => setOpen(false)}>
+              Términos
+            </Link>
+            <span aria-hidden="true">·</span>
+            <Link to="/privacidad" onClick={() => setOpen(false)}>
+              Privacidad
+            </Link>
+          </nav>
+        </div>
       </aside>
 
       <div className="dashboard-main">
