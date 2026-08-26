@@ -5,6 +5,7 @@ import { useToast } from '../../context/ToastContext.jsx';
 import Input from '../../components/ui/Input.jsx';
 import Button from '../../components/ui/Button.jsx';
 import ErrorMessage from '../../components/ui/ErrorMessage.jsx';
+import AccountDataSection from '../../components/layout/AccountDataSection.jsx';
 
 /** Perfil del usuario: datos personales y cambio de contraseña (§26). */
 export default function ProfilePage() {
@@ -157,6 +158,8 @@ export default function ProfilePage() {
           </Button>
         </form>
       </section>
+
+      <AccountDataSection user={user} />
     </>
   );
 }
