@@ -2397,3 +2397,173 @@ a.dashboard-card:hover {
   overflow-x: auto;
   white-space: pre-wrap;
 }
+
+/* --------------------------------------------------- Documentos legales */
+
+.legal-page {
+  max-width: 780px;
+}
+
+.legal-meta {
+  color: var(--ink-muted);
+  font-size: 0.88rem;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.legal-body section {
+  margin-bottom: 2rem;
+}
+
+.legal-body h2 {
+  font-size: 1.15rem;
+  margin-bottom: 0.75rem;
+}
+
+.legal-body p,
+.legal-body li {
+  color: var(--ink-soft);
+  margin-bottom: 0.75rem;
+}
+
+.legal-body ul {
+  padding-left: 1.25rem;
+}
+
+.legal-body strong {
+  color: var(--ink);
+}
+
+.legal-body .table-wrapper {
+  margin: 1rem 0 1.5rem;
+}
+
+.legal-contact {
+  margin-top: 2.5rem;
+  padding: 1.5rem;
+  background: var(--surface-alt);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.legal-contact h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 1.05rem;
+  margin-bottom: 1rem;
+}
+
+.legal-links {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+  font-size: 0.9rem;
+}
+
+/* ----------------------------------------------- Consentimiento y cuenta */
+
+.consent-block {
+  border: 0;
+  padding: 0;
+  margin: 1.25rem 0 0.5rem;
+}
+
+.consent-block .declaration {
+  align-items: flex-start;
+  margin: 0 0 0.75rem;
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+.consent-block .declaration input {
+  margin-top: 0.2rem;
+  flex-shrink: 0;
+}
+
+.auth-icon {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 1rem;
+  border-radius: 50%;
+  background: var(--brand-soft);
+  color: var(--brand-dark);
+}
+
+.auth-icon-success {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.auth-icon-error {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.auth-page .auth-card h1,
+.auth-page .auth-card > .muted {
+  text-align: center;
+}
+
+.verified-line {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.verified-line .badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+/* ------------------------------------------------- Subida de fotografías */
+
+.gallery-upload {
+  padding: 1.25rem;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--surface-alt);
+  margin-bottom: 1rem;
+}
+
+.gallery-upload h3 {
+  font-size: 1rem;
+  margin-bottom: 0.25rem;
+}
+
+.gallery-upload p {
+  font-size: 0.85rem;
+  margin-bottom: 0.75rem;
+}
+
+.gallery-upload input[type='file'] {
+  font-size: 0.9rem;
+}
+
+.gallery-upload input[type='file']::file-selector-button {
+  margin-right: 0.75rem;
+  padding: 0.45rem 1rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.gallery-upload input[type='file']::file-selector-button:hover {
+  background: var(--brand-soft);
+  border-color: var(--brand);
+}
+
+.gallery-url summary {
+  cursor: pointer;
+  font-size: 0.88rem;
+  color: var(--ink-muted);
+  margin-bottom: 0.75rem;
+}
