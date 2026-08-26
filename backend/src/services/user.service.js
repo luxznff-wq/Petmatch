@@ -1,11 +1,10 @@
 import { ApiError } from '../utils/api-error.js';
 import { resolvePagination } from '../utils/pagination.js';
 import * as userModel from '../models/user.model.js';
-import * as shelterModel from '../models/shelter.model.js';
-import * as adoptionModel from '../models/adoption.model.js';
 import * as auditModel from '../models/audit.model.js';
 import * as access from './access.service.js';
 import { toPublicUser } from './auth.service.js';
+import { assertDeletable } from './account.service.js';
 import { messages, notify } from './notification.service.js';
 
 export async function list(query) {
@@ -80,17 +79,8 @@ export async function remove(actor, id) {
   const user = await userModel.findById(id);
   if (!user) throw ApiError.notFound('El usuario no existe');
 
-  const scope =
-    user.role === 'REFUGIO'
-      ? { role: 'REFUGIO', shelterId: (await shelterModel.findByOwner(user.id))?.id ?? -1 }
-      : { role: 'ADOPTANTE', userId: user.id };
-  const { total: adoptions } = await adoptionModel.list({ scope }, { page: 1, limit: 1 });
-
-  if (adoptions > 0) {
-    throw ApiError.conflict(
-      'Esta cuenta tiene adopciones registradas y no puede eliminarse. Suspéndela para bloquear su acceso sin perder el historial.'
-    );
-  }
+  // Misma comprobación que la baja voluntaria: la regla vive en un solo sitio.
+  await assertDeletable(user);
 
   await userModel.remove(id);
   await auditModel.record({

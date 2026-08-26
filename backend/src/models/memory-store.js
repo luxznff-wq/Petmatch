@@ -35,7 +35,8 @@ const emptyState = () => ({
   interviews: [],
   adoptions: [],
   notifications: [],
-  auditLogs: []
+  auditLogs: [],
+  authTokens: []
 });
 
 export const sequences = {
@@ -121,6 +122,7 @@ export function cascadeDeleteUser(userId) {
   );
   removeWhere('favorites', (favorite) => sameId(favorite.userId, userId));
   removeWhere('notifications', (notification) => sameId(notification.userId, userId));
+  removeWhere('authTokens', (token) => sameId(token.userId, userId));
   store.auditLogs
     .filter((entry) => sameId(entry.userId, userId))
     .forEach((entry) => {
