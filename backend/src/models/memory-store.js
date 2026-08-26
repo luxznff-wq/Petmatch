@@ -141,3 +141,18 @@ export function normalizeText(value) {
 
 export const includesText = (haystack, needle) =>
   normalizeText(haystack).includes(normalizeText(needle));
+
+/**
+ * Escapa los comodines de `LIKE` para que el texto que escribe el usuario se
+ * busque literalmente.
+ *
+ * Sin esto, `%` y `_` se interpretan como comodines: buscar «100%» devolvía
+ * el catálogo entero en PostgreSQL, mientras que en memoria no devolvía nada.
+ * Escapando, ambos motores buscan lo mismo. La barra invertida va primero
+ * para no volver a escapar las que introducen las sustituciones siguientes.
+ */
+export const escapeLike = (value) =>
+  String(value ?? '')
+    .replaceAll('\\', '\\\\')
+    .replaceAll('%', '\\%')
+    .replaceAll('_', '\\_');

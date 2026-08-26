@@ -4,6 +4,7 @@ import { resolveAge } from '../utils/age.js';
 import {
   cascadeDeletePet,
   clone,
+  escapeLike,
   includesText,
   normalizeText,
   sameId,
@@ -193,7 +194,7 @@ export async function list(filters, pagination) {
     // sola columna sin acentos (migración 006). Buscar sobre una única tabla
     // permite que el índice GIN de trigramas resuelva el comodín inicial;
     // repartir el OR entre `pets` y `shelters` forzaba un Seq Scan.
-    builder.where('p.search_text LIKE ?', `%${normalizeText(search)}%`);
+    builder.where('p.search_text LIKE ?', `%${escapeLike(normalizeText(search))}%`);
   }
   builder.whereIfPresent('LOWER(p.species) = LOWER(?)', species);
   builder.whereIfPresent('p.sex = ?', sex);

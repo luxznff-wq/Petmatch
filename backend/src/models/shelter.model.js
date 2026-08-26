@@ -1,6 +1,6 @@
 import { isPostgres, query, queryOne } from '../config/database.js';
 import { QueryBuilder } from '../utils/sql.js';
-import { clone, includesText, sameId, sequences, store } from './memory-store.js';
+import { clone, escapeLike, includesText, sameId, sequences, store } from './memory-store.js';
 
 const map = (row) =>
   row && {
@@ -89,7 +89,10 @@ export async function list({ search, city, status } = {}, pagination) {
   const builder = new QueryBuilder();
   builder.whereIfPresent('s.status = ?', status);
   builder.whereIfPresent('LOWER(s.city) = LOWER(?)', city);
-  if (search) builder.where('(s.name ILIKE ? OR s.city ILIKE ?)', `%${search}%`, `%${search}%`);
+  if (search) {
+    const texto = `%${escapeLike(search)}%`;
+    builder.where('(s.name ILIKE ? OR s.city ILIKE ?)', texto, texto);
+  }
 
   const { rows: countRows } = await query(
     `SELECT count(*)::int AS total FROM shelters s WHERE ${builder.clause}`,

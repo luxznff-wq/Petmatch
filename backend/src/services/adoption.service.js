@@ -4,7 +4,7 @@ import * as adoptionModel from '../models/adoption.model.js';
 import * as requestModel from '../models/adoption-request.model.js';
 import * as auditModel from '../models/audit.model.js';
 import * as access from './access.service.js';
-import { requireVisibleRequest } from './adoption-request.service.js';
+import { requireActionableRequest, requireVisibleRequest } from './adoption-request.service.js';
 import { messages, notify } from './notification.service.js';
 
 export async function list(user, query) {
@@ -31,7 +31,7 @@ export async function getById(user, id) {
  * los efectos posteriores: cerrar las solicitudes rivales y notificar.
  */
 export async function create(user, { requestId, notes }) {
-  const request = await requireVisibleRequest(user, requestId);
+  const request = await requireActionableRequest(user, requestId);
   if (user.role === 'ADOPTANTE') {
     throw ApiError.forbidden('Solo el refugio puede registrar la adopción');
   }
