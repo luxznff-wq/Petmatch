@@ -36,7 +36,9 @@ export default function RegisterPage() {
         password: form.get('password'),
         phone: form.get('phone') || undefined,
         city: form.get('city'),
-        role
+        role,
+        acceptedTerms: form.get('acceptedTerms') === 'on',
+        acceptedPrivacy: form.get('acceptedPrivacy') === 'on'
       });
       toast.success(
         role === 'REFUGIO'
@@ -112,6 +114,45 @@ export default function RegisterPage() {
             hint="Mínimo 8 caracteres, con una mayúscula, una minúscula y un número."
             error={fieldError('password')}
           />
+
+          {/* Consentimiento explícito y separado para cada documento: la ley
+              exige un acto afirmativo, no una casilla ya marcada. */}
+          <fieldset className="consent-block">
+            <legend className="sr-only">Consentimiento</legend>
+
+            <label className="declaration">
+              <input type="checkbox" name="acceptedTerms" required />
+              <span>
+                He leído y acepto los{' '}
+                <Link to="/terminos" target="_blank" rel="noreferrer">
+                  Términos y condiciones
+                </Link>
+                .
+              </span>
+            </label>
+            {fieldError('acceptedTerms') && (
+              <small className="field-error" role="alert">
+                {fieldError('acceptedTerms')}
+              </small>
+            )}
+
+            <label className="declaration">
+              <input type="checkbox" name="acceptedPrivacy" required />
+              <span>
+                He leído la{' '}
+                <Link to="/privacidad" target="_blank" rel="noreferrer">
+                  Política de Privacidad
+                </Link>{' '}
+                y autorizo el tratamiento de mis datos para gestionar mi cuenta y mis solicitudes
+                de adopción.
+              </span>
+            </label>
+            {fieldError('acceptedPrivacy') && (
+              <small className="field-error" role="alert">
+                {fieldError('acceptedPrivacy')}
+              </small>
+            )}
+          </fieldset>
 
           {error && !error.errors?.length && <ErrorMessage error={error} title="No pudimos crear tu cuenta" />}
 

@@ -31,6 +31,7 @@ export default function PetFormPage() {
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
   const [newImage, setNewImage] = useState('');
+  const [uploading, setUploading] = useState(false);
 
   const current = pet.data;
   // Mientras no se toque ninguna casilla se muestran las características
@@ -78,6 +79,27 @@ export default function PetFormPage() {
       setError(saveError);
     } finally {
       setSaving(false);
+    }
+  }
+
+  /** Sube el archivo elegido y recarga la galería. */
+  async function uploadFile(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    try {
+      // La primera fotografía de la mascota pasa a ser la principal.
+      const isFirst = (current?.images?.length ?? 0) === 0;
+      await petsApi.uploadImage(id, file, isFirst);
+      pet.reload();
+      toast.success('Fotografía subida.');
+    } catch (uploadError) {
+      toast.error(uploadError.message);
+    } finally {
+      setUploading(false);
+      // Permite volver a elegir el mismo archivo si hizo falta reintentar.
+      event.target.value = '';
     }
   }
 
@@ -295,18 +317,36 @@ export default function PetFormPage() {
             ))}
           </div>
 
-          <div className="gallery-add">
-            <Input
-              label="Agregar fotografía por URL"
-              type="url"
-              value={newImage}
-              onChange={(event) => setNewImage(event.target.value)}
-              placeholder="https://…"
+          <div className="gallery-upload">
+            <h3>Subir una fotografía</h3>
+            <p className="muted">
+              Formatos JPG, PNG, WEBP o AVIF. Tamaño máximo 5 MB.
+            </p>
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/avif"
+              onChange={uploadFile}
+              disabled={uploading}
+              aria-label="Seleccionar fotografía"
             />
-            <Button variant="secondary" icon={ImagePlus} onClick={addImage} type="button">
-              Agregar
-            </Button>
+            {uploading && <LoadingSpinner label="Subiendo la fotografía…" />}
           </div>
+
+          <details className="gallery-url">
+            <summary>O agregar una fotografía desde una URL</summary>
+            <div className="gallery-add">
+              <Input
+                label="Dirección de la imagen"
+                type="url"
+                value={newImage}
+                onChange={(event) => setNewImage(event.target.value)}
+                placeholder="https://…"
+              />
+              <Button variant="secondary" icon={ImagePlus} onClick={addImage} type="button">
+                Agregar
+              </Button>
+            </div>
+          </details>
         </section>
       )}
     </>

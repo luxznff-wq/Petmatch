@@ -28,6 +28,11 @@ import LoginPage from './pages/LoginPage.jsx';
 import RegisterPage from './pages/RegisterPage.jsx';
 import NotFoundPage from './pages/NotFoundPage.jsx';
 import NotificationsPage from './pages/NotificationsPage.jsx';
+import ForgotPasswordPage from './pages/ForgotPasswordPage.jsx';
+import ResetPasswordPage from './pages/ResetPasswordPage.jsx';
+import VerifyEmailPage from './pages/VerifyEmailPage.jsx';
+import TermsPage from './pages/legal/TermsPage.jsx';
+import PrivacyPage from './pages/legal/PrivacyPage.jsx';
 
 import AdopterDashboardPage from './pages/adopter/AdopterDashboardPage.jsx';
 import ProfilePage from './pages/adopter/ProfilePage.jsx';
@@ -102,6 +107,13 @@ export default function App() {
         <Route path="como-adoptar" element={<HowToAdoptPage />} />
         <Route path="ingresar" element={<LoginPage />} />
         <Route path="registro" element={<RegisterPage />} />
+        <Route path="recuperar" element={<ForgotPasswordPage />} />
+        <Route path="restablecer" element={<ResetPasswordPage />} />
+        <Route path="verificar-correo" element={<VerifyEmailPage />} />
+
+        {/* Documentos legales: públicos y enlazados desde el registro. */}
+        <Route path="terminos" element={<TermsPage />} />
+        <Route path="privacidad" element={<PrivacyPage />} />
 
         <Route element={<ProtectedRoute />}>
           <Route path="notificaciones" element={<NotificationsPage />} />
