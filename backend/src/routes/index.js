@@ -3,8 +3,10 @@ import { isPostgres } from '../config/database.js';
 import { asyncHandler } from '../utils/async-handler.js';
 import { ok } from '../utils/http.js';
 import * as reportController from '../controllers/report.controller.js';
+import * as accountController from '../controllers/account.controller.js';
 
 import authRoutes from './auth.routes.js';
+import accountRoutes from './account.routes.js';
 import petRoutes from './pet.routes.js';
 import shelterRoutes from './shelter.routes.js';
 import favoriteRoutes from './favorite.routes.js';
@@ -34,7 +36,11 @@ router.get(
 // Estadísticas de la portada: públicas y sin sesión (§10).
 router.get('/stats', reportController.publicStats);
 
+// Versión vigente de los documentos legales y datos del responsable.
+router.get('/legal', accountController.legalInfo);
+
 router.use('/auth', authRoutes);
+router.use('/account', accountRoutes);
 router.use('/users', userRoutes);
 router.use('/pets', petRoutes);
 router.use('/shelters', shelterRoutes);

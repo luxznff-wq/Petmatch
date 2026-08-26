@@ -49,6 +49,33 @@ export const env = {
     expiresIn: process.env.JWT_EXPIRES_IN || '8h'
   },
   bcryptRounds: Number(process.env.BCRYPT_ROUNDS) || (isTest ? 4 : 12),
+
+  /**
+   * Correo transaccional. Sin `SMTP_HOST` los mensajes se escriben en la
+   * consola en lugar de enviarse: la recuperación de contraseña funciona en
+   * local sin contratar ningún proveedor.
+   */
+  smtp: {
+    host: process.env.SMTP_HOST || null,
+    port: Number(process.env.SMTP_PORT) || 587,
+    user: process.env.SMTP_USER || null,
+    password: process.env.SMTP_PASSWORD || null,
+    from: process.env.SMTP_FROM || 'PetMatch <no-reply@petmatch.example>'
+  },
+
+  /** Subida de fotografías (§60). */
+  uploads: {
+    dir: process.env.UPLOAD_DIR || 'uploads',
+    maxBytes: Number(process.env.UPLOAD_MAX_BYTES) || 5 * 1024 * 1024,
+    allowedTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/avif']
+  },
+
+  /**
+   * Almacén compartido para los límites de peticiones. Sin Redis, cada
+   * instancia lleva su propia cuenta y el límite deja de ser fiable en
+   * cuanto haya más de una.
+   */
+  redisUrl: process.env.REDIS_URL || null,
   seed: {
     adminEmail: process.env.SEED_ADMIN_EMAIL || 'admin@petmatch.com',
     adminPassword: process.env.SEED_ADMIN_PASSWORD || 'Admin123',

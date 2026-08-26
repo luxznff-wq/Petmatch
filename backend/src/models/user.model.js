@@ -28,6 +28,10 @@ const map = (row) =>
     avatarUrl: row.avatar_url,
     role: row.role,
     status: row.status,
+    emailVerifiedAt: row.email_verified_at ?? null,
+    termsAcceptedAt: row.terms_accepted_at ?? null,
+    privacyAcceptedAt: row.privacy_accepted_at ?? null,
+    legalVersion: row.legal_version ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at
   };
@@ -46,6 +50,8 @@ export async function findByEmail(email) {
 }
 
 export async function create(data, passwordHash) {
+  const acceptedAt = new Date().toISOString();
+
   if (!isPostgres) {
     const user = {
       id: sequences.users.next(),
@@ -59,6 +65,11 @@ export async function create(data, passwordHash) {
       avatarUrl: null,
       role: data.role,
       status: 'ACTIVO',
+      emailVerifiedAt: null,
+      // Aceptación de los documentos legales en el momento del registro.
+      termsAcceptedAt: acceptedAt,
+      privacyAcceptedAt: acceptedAt,
+      legalVersion: data.legalVersion,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
@@ -67,8 +78,9 @@ export async function create(data, passwordHash) {
   }
 
   const row = await queryOne(
-    `INSERT INTO users (role_id, first_name, last_name, email, password_hash, phone, address, city)
-     VALUES ((SELECT id FROM roles WHERE name = $1), $2, $3, $4, $5, $6, $7, $8)
+    `INSERT INTO users (role_id, first_name, last_name, email, password_hash, phone, address, city,
+                        terms_accepted_at, privacy_accepted_at, legal_version)
+     VALUES ((SELECT id FROM roles WHERE name = $1), $2, $3, $4, $5, $6, $7, $8, $9, $9, $10)
      RETURNING id`,
     [
       data.role,
@@ -78,10 +90,26 @@ export async function create(data, passwordHash) {
       passwordHash,
       data.phone ?? null,
       data.address ?? null,
-      data.city ?? null
+      data.city ?? null,
+      acceptedAt,
+      data.legalVersion
     ]
   );
   return findById(row.id);
+}
+
+export async function markEmailVerified(id) {
+  if (!isPostgres) {
+    const user = store.users.find((item) => sameId(item.id, id));
+    if (!user) return null;
+    user.emailVerifiedAt ??= new Date().toISOString();
+    return clone(user);
+  }
+  const row = await queryOne(
+    'UPDATE users SET email_verified_at = COALESCE(email_verified_at, now()) WHERE id = $1 RETURNING id',
+    [Number(id) || 0]
+  );
+  return row ? findById(row.id) : null;
 }
 
 export async function update(id, data) {
