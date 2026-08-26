@@ -1,0 +1,63 @@
+name: CI
+
+# Se ejecuta en cada push a las ramas principales y en cada Pull Request.
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  calidad:
+    name: Lint y pruebas
+    runs-on: ubuntu-latest
+
+    services:
+      # Las pruebas corren dos veces: contra el almacén en memoria y contra
+      # PostgreSQL real, que es lo que confirma que ambos modos se comportan
+      # igual. Sin este servicio, el segundo bloque no probaría nada.
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: petmatch_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Analizar el código
+        run: npm run lint
+
+      - name: Pruebas en modo memoria
+        run: npm run test:api
+
+      - name: Aplicar migraciones
+        run: npm run db:migrate
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/petmatch_test
+
+      - name: Pruebas contra PostgreSQL
+        run: npm run test:api
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/petmatch_test
+
+      - name: Pruebas de interfaz
+        run: npm run test:web
+
+      - name: Compilar el frontend
+        run: npm run build
