@@ -16,7 +16,16 @@ export const registerSchema = z.object({
   phone,
   address: optionalText(300, 'La dirección'),
   city: text(2, 100, 'La ciudad'),
-  role: z.enum(['ADOPTANTE', 'REFUGIO']).default('ADOPTANTE')
+  role: z.enum(['ADOPTANTE', 'REFUGIO']).default('ADOPTANTE'),
+
+  // §32 aplicado al registro: la aceptación debe ser un acto afirmativo y
+  // explícito, no una casilla premarcada ni un consentimiento tácito.
+  acceptedTerms: z.literal(true, {
+    message: 'Debes aceptar los términos y condiciones para crear una cuenta'
+  }),
+  acceptedPrivacy: z.literal(true, {
+    message: 'Debes aceptar la política de privacidad para crear una cuenta'
+  })
 });
 
 export const loginSchema = z.object({
