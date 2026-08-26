@@ -37,6 +37,14 @@ export const listImages = asyncHandler(async (req, res) => {
   return ok(res, images);
 });
 
+/** Subida de un archivo de imagen (multipart/form-data). */
+export const uploadImage = asyncHandler(async (req, res) => {
+  const image = await petService.addUploadedImage(req.user, req.validatedParams.id, req.file, {
+    isPrimary: req.body?.isPrimary === 'true' || req.body?.isPrimary === true
+  });
+  return created(res, image);
+});
+
 export const addImage = asyncHandler(async (req, res) => {
   const image = await petService.addImage(req.user, req.validatedParams.id, req.body);
   return created(res, image);
