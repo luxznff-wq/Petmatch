@@ -25,14 +25,20 @@ export default function Button({
     </>
   );
 
-  if (to) {
+  // Un enlace no admite `disabled`: seguiría navegando. Cuando la acción no
+  // está disponible se renderiza un botón inhabilitado de verdad, para que no
+  // se pueda pulsar, quede fuera del recorrido de tabulación y los lectores
+  // de pantalla lo anuncien como tal.
+  const unavailable = disabled || loading;
+
+  if (to && !unavailable) {
     return (
       <Link to={to} className={classes} {...props}>
         {content}
       </Link>
     );
   }
-  if (href) {
+  if (href && !unavailable) {
     return (
       <a href={href} className={classes} target="_blank" rel="noreferrer noopener" {...props}>
         {content}
@@ -40,7 +46,7 @@ export default function Button({
     );
   }
   return (
-    <button className={classes} disabled={disabled || loading} {...props}>
+    <button type="button" className={classes} disabled={unavailable} {...props}>
       {content}
     </button>
   );
