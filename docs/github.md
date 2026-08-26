@@ -5,6 +5,25 @@ El repositorio local ya tiene el historial completo: `main`, `develop`, ramas
 versión. Falta publicarlo y crear los Issues, Milestones y Releases que evalúa
 la especificación (§79-§83, §94).
 
+## Atajo: hacerlo todo de una vez
+
+Una vez tengas la CLI de GitHub autenticada, un solo comando deja el
+repositorio publicado con sus Milestones, Issues y Releases:
+
+```bash
+winget install GitHub.cli     # si aún no la tienes
+gh auth login                 # abre el navegador para autorizar
+
+bash scripts/github-setup.sh              # repositorio privado
+bash scripts/github-setup.sh petmatch --public   # o público
+```
+
+El script es idempotente: si algo ya existe lo salta, así que puedes
+ejecutarlo varias veces sin duplicar nada. El resto de esta guía explica
+qué hace cada paso, por si prefieres ir a mano.
+
+---
+
 ## 1. Crear el repositorio y subir el historial
 
 ```bash
