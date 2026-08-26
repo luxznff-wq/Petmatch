@@ -16,10 +16,20 @@ import { env } from '../config/env.js';
 
 let transporter = null;
 
+/**
+ * Hay SMTP utilizable cuando están el servidor **y** las credenciales.
+ *
+ * Con el servidor configurado pero la clave vacía —el estado natural mientras
+ * se prepara el despliegue— el envío fallaría y, si además diéramos el
+ * transporte por bueno, el enlace tampoco aparecería en la consola: la
+ * recuperación de contraseña quedaría inservible sin que nadie se enterase.
+ */
+export const hasRealTransport = () => Boolean(env.smtp.host && env.smtp.password);
+
 function getTransporter() {
   if (transporter) return transporter;
 
-  if (env.smtp.host) {
+  if (hasRealTransport()) {
     transporter = nodemailer.createTransport({
       host: env.smtp.host,
       port: env.smtp.port,
@@ -27,15 +37,18 @@ function getTransporter() {
       auth: env.smtp.user ? { user: env.smtp.user, pass: env.smtp.password } : undefined
     });
   } else {
+    if (env.smtp.host && !env.isTest) {
+      console.warn(
+        `[PetMatch] SMTP_HOST está definido (${env.smtp.host}) pero falta SMTP_PASSWORD: ` +
+          'los correos se escribirán en la consola en lugar de enviarse.'
+      );
+    }
     // `jsonTransport` no abre ninguna conexión: compone el mensaje y lo
     // devuelve, para poder registrarlo.
     transporter = nodemailer.createTransport({ jsonTransport: true });
   }
   return transporter;
 }
-
-/** `true` cuando hay un servidor SMTP real detrás. */
-export const hasRealTransport = () => Boolean(env.smtp.host);
 
 async function send({ to, subject, text, html }) {
   try {
