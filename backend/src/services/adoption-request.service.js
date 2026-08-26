@@ -145,7 +145,17 @@ export async function changeStatus(user, id, { status, reviewNotes }) {
   assertTransition(request.status, status);
 
   const petStatus = await resolvePetStatus(request, status);
-  const updated = await requestModel.transition(request.id, status, { petStatus, reviewNotes });
+  const updated = await requestModel.transition(request.id, status, {
+    // Sólo se aplica si la solicitud sigue como estaba al validarla: entre la
+    // lectura y esta escritura hay varios `await`, y sin esta condición dos
+    // peticiones simultáneas se daban por buenas las dos.
+    expectedStatus: request.status,
+    petStatus,
+    reviewNotes
+  });
+  if (!updated) {
+    throw ApiError.conflict('Otra persona acaba de cambiar esta solicitud. Vuelve a cargarla.');
+  }
 
   await notifyStatusChange(updated, status);
   await auditModel.record({
@@ -169,7 +179,13 @@ export async function cancel(user, id) {
   }
 
   const petStatus = await resolvePetStatus(request, 'CANCELADA');
-  const updated = await requestModel.transition(request.id, 'CANCELADA', { petStatus });
+  const updated = await requestModel.transition(request.id, 'CANCELADA', {
+    expectedStatus: request.status,
+    petStatus
+  });
+  if (!updated) {
+    throw ApiError.conflict('Esta solicitud ya no se puede cancelar');
+  }
 
   const shelterOwnerId = await resolveShelterOwnerId(request.shelterId);
   await notify(
