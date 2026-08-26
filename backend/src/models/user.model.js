@@ -3,6 +3,7 @@ import { QueryBuilder } from '../utils/sql.js';
 import {
   cascadeDeleteUser,
   clone,
+  escapeLike,
   includesText,
   sameId,
   sequences,
@@ -211,11 +212,12 @@ export async function list(filters, pagination) {
 
   const builder = new QueryBuilder();
   if (search) {
+    const texto = `%${escapeLike(search)}%`;
     builder.where(
       '(u.first_name ILIKE ? OR u.last_name ILIKE ? OR u.email ILIKE ?)',
-      `%${search}%`,
-      `%${search}%`,
-      `%${search}%`
+      texto,
+      texto,
+      texto
     );
   }
   builder.whereIfPresent('r.name = ?', role);

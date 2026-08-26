@@ -1,6 +1,6 @@
 import { isPostgres, query, queryOne, transaction } from '../config/database.js';
 import { QueryBuilder } from '../utils/sql.js';
-import { clone, sameId, sequences, store } from './memory-store.js';
+import { clone, escapeLike, sameId, sequences, store } from './memory-store.js';
 
 /** Estados en los que una solicitud sigue "viva" (§35.5). */
 export const ACTIVE_STATUSES = Object.freeze([
@@ -126,10 +126,11 @@ export async function list({ scope, status, search }, pagination) {
   else if (scope.role === 'REFUGIO') builder.where('p.shelter_id = ?', Number(scope.shelterId ?? 0));
   builder.whereIfPresent('ar.status = ?', status);
   if (search) {
+    const texto = `%${escapeLike(search)}%`;
     builder.where(
       "((u.first_name || ' ' || u.last_name) ILIKE ? OR p.name ILIKE ?)",
-      `%${search}%`,
-      `%${search}%`
+      texto,
+      texto
     );
   }
 
