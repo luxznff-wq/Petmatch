@@ -12,6 +12,8 @@ import {
   generalLimiter,
   limitWrites
 } from './middleware/rate-limit.js';
+import { uploadDir } from './middleware/upload.js';
+import { PUBLIC_UPLOAD_PATH } from './services/pet.service.js';
 import apiRoutes from './routes/index.js';
 import { errorHandler, notFoundHandler } from './middleware/error-handler.js';
 
@@ -42,6 +44,20 @@ app.use(
 );
 
 app.use(express.json({ limit: '1mb' }));
+
+// Fotografías subidas por los refugios. Se sirven como archivos estáticos con
+// caché larga: el nombre incluye un UUID, así que nunca cambia el contenido de
+// una misma URL. `X-Content-Type-Options` impide que el navegador reinterprete
+// el archivo como algo distinto de una imagen.
+app.use(
+  PUBLIC_UPLOAD_PATH,
+  express.static(uploadDir, {
+    maxAge: '30d',
+    immutable: true,
+    index: false,
+    setHeaders: (response) => response.setHeader('X-Content-Type-Options', 'nosniff')
+  })
+);
 
 // Documentación interactiva de la API (§94). Va antes de los límites: es
 // una página estática y consultarla no debe consumir la cuota del visitante.

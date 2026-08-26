@@ -9,6 +9,7 @@ import {
   petSchema,
   petStatusSchema
 } from '../validators/pet.schema.js';
+import { uploadPetImage } from '../middleware/upload.js';
 import * as controller from '../controllers/pet.controller.js';
 
 const router = Router();
@@ -46,6 +47,16 @@ router.post(
   validateBody(petImageSchema),
   controller.addImage
 );
+// Subida de archivo. El cuerpo es multipart, así que no pasa por validateBody:
+// multer valida tipo y tamaño, y el servicio comprueba los permisos.
+router.post(
+  '/:id/images/upload',
+  ...manager,
+  validateParams(idParams),
+  uploadPetImage,
+  controller.uploadImage
+);
+
 router.delete('/:id/images/:imageId', ...manager, controller.removeImage);
 
 export default router;
