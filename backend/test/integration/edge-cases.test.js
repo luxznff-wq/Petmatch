@@ -248,3 +248,107 @@ describe('Búsqueda con caracteres especiales', () => {
     assert.equal(refugios.body.pagination.total, 0);
   });
 });
+
+describe('Fechas independientes del huso horario', () => {
+  beforeEach(resetDatabase);
+
+  /** Fecha de hoy en UTC, que es la referencia que usa la aplicación. */
+  const hoyUtc = () => new Date().toISOString().slice(0, 10);
+
+  test('la fecha de ingreso se ancla en UTC', async () => {
+    const admin = await createAdmin();
+    const { owner } = await createVerifiedShelter(admin);
+
+    const pet = (
+      await api.post('/api/pets').set(auth(owner.token)).send(petPayload()).expect(201)
+    ).body.data;
+
+    // `CURRENT_DATE` seguía el huso del servidor de base de datos: con la base
+    // en UTC+14 registraba el día siguiente y discrepaba del modo memoria.
+    assert.equal(pet.admittedAt, hoyUtc());
+  });
+
+  test('la fecha de adopción se ancla en UTC', async () => {
+    const admin = await createAdmin();
+    const { owner } = await createVerifiedShelter(admin);
+    const pet = (
+      await api.post('/api/pets').set(auth(owner.token)).send(petPayload()).expect(201)
+    ).body.data;
+    const adopter = await registerUser({ email: 'utc@example.com' });
+    const request = (
+      await api
+        .post('/api/adoptions/requests')
+        .set(auth(adopter.token))
+        .send(requestPayload(pet.id))
+        .expect(201)
+    ).body.data;
+
+    for (const status of ['EN_REVISION', 'APROBADA']) {
+      await api
+        .patch(`/api/adoptions/requests/${request.id}/status`)
+        .set(auth(owner.token))
+        .send({ status })
+        .expect(200);
+    }
+    const adopcion = (
+      await api.post('/api/adoptions').set(auth(owner.token)).send({ requestId: request.id }).expect(201)
+    ).body.data;
+
+    assert.equal(adopcion.adoptedAt, hoyUtc());
+  });
+
+  test('una fecha sólo-día viaja sin desplazarse', async () => {
+    const admin = await createAdmin();
+    const { owner } = await createVerifiedShelter(admin);
+
+    // 29 de febrero: si algo la convirtiera a una marca de tiempo con huso,
+    // podría volver como el 28 o el 1 de marzo.
+    const pet = (
+      await api
+        .post('/api/pets')
+        .set(auth(owner.token))
+        .send(petPayload({ birthDate: '2024-02-29' }))
+        .expect(201)
+    ).body.data;
+
+    assert.equal(pet.birthDate, '2024-02-29');
+    assert.equal((await api.get(`/api/pets/${pet.id}`).expect(200)).body.data.birthDate, '2024-02-29');
+  });
+
+  test('el instante de una entrevista se conserva exactamente', async () => {
+    const admin = await createAdmin();
+    const { owner } = await createVerifiedShelter(admin);
+    const pet = (
+      await api.post('/api/pets').set(auth(owner.token)).send(petPayload()).expect(201)
+    ).body.data;
+    const adopter = await registerUser({ email: 'instante@example.com' });
+    const request = (
+      await api
+        .post('/api/adoptions/requests')
+        .set(auth(adopter.token))
+        .send(requestPayload(pet.id))
+        .expect(201)
+    ).body.data;
+
+    for (const status of ['EN_REVISION', 'ENTREVISTA']) {
+      await api
+        .patch(`/api/adoptions/requests/${request.id}/status`)
+        .set(auth(owner.token))
+        .send({ status })
+        .expect(200);
+    }
+
+    // Un instante concreto en UTC debe volver siendo el mismo instante, sea
+    // cual sea el huso del servidor o de la base.
+    const instante = '2027-03-15T14:30:00.000Z';
+    const entrevista = (
+      await api
+        .post(`/api/adoptions/requests/${request.id}/interviews`)
+        .set(auth(owner.token))
+        .send({ scheduledAt: instante, modality: 'Presencial' })
+        .expect(201)
+    ).body.data;
+
+    assert.equal(new Date(entrevista.scheduledAt).toISOString(), instante);
+  });
+});
