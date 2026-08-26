@@ -215,6 +215,20 @@ política, y con qué versión (`legal_version`). Sin la versión no se podría 
 qué texto se comprometió cada persona: si el documento cambia de forma sustancial,
 el consentimiento anterior deja de cubrirlo y hay que volver a pedirlo.
 
+**Fechas automáticas en UTC.** `admitted_at` y `adopted_at` usaban
+`CURRENT_DATE`, que devuelve la fecha según el huso de la sesión de PostgreSQL
+—es decir, según dónde esté alojada la base—. El modo memoria calculaba
+siempre la fecha UTC, así que con la base en UTC+14 una misma adopción quedaba
+registrada el día 27 en un motor y el 26 en el otro. Ahora ambos se anclan a
+UTC: la referencia no cambia al mover el servidor, y la interfaz sigue
+mostrando las fechas en el huso de quien mira.
+
+**Escrituras de estado condicionadas.** `transition()` sólo aplica el cambio si
+la solicitud sigue en el estado que leyó quien lo decidió
+(`WHERE id = $1 AND status = $4`). Sin esa condición, dos peticiones
+simultáneas —aprobar y rechazar— leían el mismo estado, ambas se daban por
+válidas y el adoptante recibía las dos notificaciones contradictorias.
+
 **Auditoría con correo desnormalizado.** `audit_logs` guarda `user_email` además de
 `user_id`, y la clave foránea usa `ON DELETE SET NULL`: si una cuenta se elimina, la
 evidencia de qué hizo sigue siendo legible.
@@ -250,6 +264,7 @@ Además de las claves primarias y únicas, se indexa lo que realmente se filtra:
 | `005_indexes_and_triggers.sql` | Índices y triggers de mantenimiento |
 | `006_search_indexes.sql` | Columna `search_text`, triggers e índices GIN de búsqueda |
 | `007_accounts_legal_and_files.sql` | Verificación de correo, aceptación legal, `auth_tokens` y metadatos de archivos |
+| `008_dates_in_utc.sql` | Fechas automáticas ancladas a UTC, no al huso del servidor |
 
 El ejecutor (`backend/src/scripts/migrate.js`) registra cada archivo aplicado en
 `schema_migrations` y envuelve cada uno en su propia transacción. Volver a
