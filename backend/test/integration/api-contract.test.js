@@ -58,7 +58,7 @@ describe('Contrato de la API', () => {
     const response = await api.get('/api/docs/openapi.json').expect(200);
     assert.equal(response.body.openapi, '3.0.3');
     assert.equal(response.body.info.title, 'PetMatch API');
-    assert.ok(Object.keys(response.body.paths).length >= 25);
+    assert.ok(Object.keys(response.body.paths).length >= 40);
   });
 
   test('la especificación documenta todas las rutas de la especificación funcional', () => {
@@ -93,7 +93,15 @@ describe('Contrato de la API', () => {
       '/reports/adoptions',
       '/reports/pets',
       '/reports/requests',
-      '/reports/shelters'
+      '/reports/shelters',
+      // Cuenta y documentos legales
+      '/legal',
+      '/account/forgot-password',
+      '/account/reset-password',
+      '/account/verify-email',
+      '/account/me/export',
+      '/account/me',
+      '/pets/{id}/images/upload'
     ];
 
     const missing = required.filter((path) => !openapi.paths[path]);
