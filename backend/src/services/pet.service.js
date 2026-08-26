@@ -1,12 +1,19 @@
+import { unlink } from 'node:fs/promises';
+import { basename, join } from 'node:path';
 import { ApiError } from '../utils/api-error.js';
 import { resolvePagination } from '../utils/pagination.js';
+import { detectImageType } from '../utils/image-signature.js';
 import * as petModel from '../models/pet.model.js';
 import * as petImageModel from '../models/pet-image.model.js';
 import * as favoriteModel from '../models/favorite.model.js';
 import * as shelterModel from '../models/shelter.model.js';
 import * as auditModel from '../models/audit.model.js';
 import * as access from './access.service.js';
+import { uploadDir } from '../middleware/upload.js';
 import { messages, notifyMany } from './notification.service.js';
+
+/** Prefijo público bajo el que se sirven los archivos subidos. */
+export const PUBLIC_UPLOAD_PATH = '/uploads';
 
 /** Estados en los que la mascota deja de poder recibir solicitudes (§51). */
 const UNAVAILABLE_STATUSES = ['ADOPTADA', 'NO_DISPONIBLE'];
@@ -145,8 +152,61 @@ export async function addImage(user, petId, input) {
   return petImageModel.add(pet.id, input);
 }
 
+/**
+ * Registra una fotografía subida como archivo (§60).
+ *
+ * Si la comprobación de permisos falla, el archivo ya está en disco: hay que
+ * borrarlo para no dejar huérfanos de quien no tenía derecho a subirlo.
+ */
+export async function addUploadedImage(user, petId, file, { isPrimary = false } = {}) {
+  if (!file) throw ApiError.badRequest('Adjunta una imagen en el campo "image"');
+
+  let pet;
+  try {
+    pet = await requireManageablePet(user, petId);
+
+    // El tipo declarado en la petición lo elige quien sube el archivo: no
+    // prueba nada. Se comprueba la firma real del contenido y, si no es una
+    // imagen admitida, se descarta.
+    const realType = await detectImageType(join(uploadDir, file.filename));
+    if (!realType) {
+      throw ApiError.unprocessable(
+        'El archivo no es una imagen válida. Usa JPG, PNG, WEBP o AVIF.'
+      );
+    }
+    file.mimetype = realType;
+  } catch (error) {
+    await discardUpload(file.filename);
+    throw error;
+  }
+
+  return petImageModel.add(pet.id, {
+    url: `${PUBLIC_UPLOAD_PATH}/${file.filename}`,
+    isPrimary,
+    storageKey: file.filename,
+    mimeType: file.mimetype,
+    sizeBytes: file.size
+  });
+}
+
 export async function removeImage(user, petId, imageId) {
   const pet = await requireManageablePet(user, petId);
-  const deleted = await petImageModel.remove(pet.id, imageId);
-  if (!deleted) throw ApiError.notFound('La fotografía no existe');
+
+  const image = await petImageModel.findById(pet.id, imageId);
+  if (!image) throw ApiError.notFound('La fotografía no existe');
+
+  await petImageModel.remove(pet.id, imageId);
+  // El archivo se borra después de la fila: si fallara el borrado en disco,
+  // queda un archivo suelto y no una referencia rota en la galería.
+  if (image.storageKey) await discardUpload(image.storageKey);
+}
+
+/** Elimina un archivo del almacenamiento sin propagar errores de disco. */
+async function discardUpload(filename) {
+  if (!filename) return;
+  try {
+    await unlink(join(uploadDir, basename(filename)));
+  } catch {
+    // El archivo ya no estaba: nada que limpiar.
+  }
 }

@@ -16,6 +16,8 @@ export default function Footer() {
           <Link to="/mascotas">Explorar mascotas</Link>
           <Link to="/refugios">Refugios</Link>
           <Link to="/como-adoptar">¿Cómo adoptar?</Link>
+          <Link to="/terminos">Términos y condiciones</Link>
+          <Link to="/privacidad">Privacidad</Link>
           <a href="/api/docs" target="_blank" rel="noreferrer noopener">
             Documentación de la API
           </a>

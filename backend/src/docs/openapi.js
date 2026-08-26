@@ -74,7 +74,7 @@ export const openapi = {
   openapi: '3.0.3',
   info: {
     title: 'PetMatch API',
-    version: '1.0.0',
+    version: '1.1.0',
     description:
       'API REST de PetMatch: gestión y adopción responsable de mascotas.\n\n' +
       'Autenticación por JWT (`Authorization: Bearer <token>`) y autorización por rol ' +
@@ -146,6 +146,10 @@ export const openapi = {
           city: { type: 'string', nullable: true },
           role: { type: 'string', enum: USER_ROLES },
           status: { type: 'string', enum: USER_STATUSES },
+          emailVerifiedAt: { type: 'string', format: 'date-time', nullable: true },
+          termsAcceptedAt: { type: 'string', format: 'date-time', nullable: true },
+          privacyAcceptedAt: { type: 'string', format: 'date-time', nullable: true },
+          legalVersion: { type: 'string', nullable: true },
           createdAt: { type: 'string', format: 'date-time' }
         }
       },
@@ -223,7 +227,10 @@ export const openapi = {
           id: { type: 'integer' },
           petId: { type: 'integer' },
           url: { type: 'string', format: 'uri' },
-          isPrimary: { type: 'boolean' }
+          isPrimary: { type: 'boolean' },
+          storageKey: { type: 'string', nullable: true, description: 'Presente sólo si el archivo se subió a PetMatch' },
+          mimeType: { type: 'string', nullable: true },
+          sizeBytes: { type: 'integer', nullable: true }
         }
       },
       Shelter: {
@@ -404,13 +411,126 @@ export const openapi = {
       }
     },
 
+
+    '/legal': {
+      get: {
+        tags: ['Autenticación'],
+        summary: 'Versión vigente de los documentos legales y datos del responsable',
+        responses: { 200: jsonResponse('Información legal', envelope({ type: 'object' })) }
+      }
+    },
+    '/account/forgot-password': {
+      post: {
+        tags: ['Autenticación'],
+        summary: 'Solicitar un enlace para restablecer la contraseña',
+        description:
+          'Responde siempre 200, exista o no la cuenta: distinguir ambos casos ' +
+          'permitiría averiguar qué correos están registrados.',
+        requestBody: jsonBody({
+          type: 'object',
+          required: ['email'],
+          properties: { email: { type: 'string', format: 'email' } }
+        }),
+        responses: { 200: jsonResponse('Solicitud registrada', envelope({ type: 'object' })), ...pick(422) }
+      }
+    },
+    '/account/reset-password': {
+      post: {
+        tags: ['Autenticación'],
+        summary: 'Establecer una contraseña nueva con el enlace recibido',
+        description: 'El enlace caduca en una hora y sólo puede usarse una vez.',
+        requestBody: jsonBody({
+          type: 'object',
+          required: ['token', 'newPassword'],
+          properties: { token: { type: 'string' }, newPassword: { type: 'string', minLength: 8 } }
+        }),
+        responses: { 200: jsonResponse('Contraseña actualizada', envelope({ type: 'object' })), ...pick(400, 403, 422) }
+      }
+    },
+    '/account/verify-email': {
+      post: {
+        tags: ['Autenticación'],
+        summary: 'Confirmar la dirección de correo',
+        requestBody: jsonBody({
+          type: 'object',
+          required: ['token'],
+          properties: { token: { type: 'string' } }
+        }),
+        responses: { 200: jsonResponse('Correo verificado', envelope(ref('User'))), ...pick(400, 422) }
+      }
+    },
+    '/account/verify-email/resend': {
+      post: {
+        tags: ['Autenticación'],
+        summary: 'Reenviar el correo de confirmación',
+        security: bearer,
+        responses: { 200: jsonResponse('Correo enviado', envelope({ type: 'object' })), ...pick(401, 409) }
+      }
+    },
+    '/account/me/export': {
+      get: {
+        tags: ['Usuarios'],
+        summary: 'Descargar una copia de los datos personales',
+        description: 'Derechos de acceso y portabilidad (Ley 29733). Devuelve un archivo JSON.',
+        security: bearer,
+        responses: {
+          200: { description: 'Archivo con los datos de la cuenta' },
+          ...pick(401)
+        }
+      }
+    },
+    '/account/me': {
+      delete: {
+        tags: ['Usuarios'],
+        summary: 'Eliminar la propia cuenta',
+        description:
+          'Derecho de cancelación. Exige la contraseña y una confirmación explícita. ' +
+          'Se rechaza si la cuenta tiene adopciones registradas.',
+        security: bearer,
+        requestBody: jsonBody({
+          type: 'object',
+          required: ['password', 'confirmation'],
+          properties: {
+            password: { type: 'string' },
+            confirmation: { type: 'string', enum: ['ELIMINAR'] }
+          }
+        }),
+        responses: { 204: { description: 'Cuenta eliminada' }, ...pick(401, 409, 422) }
+      }
+    },
+    '/pets/{id}/images/upload': {
+      post: {
+        tags: ['Mascotas'],
+        summary: 'Subir una fotografía como archivo',
+        description: 'JPG, PNG, WEBP o AVIF, hasta 5 MB. El cuerpo es multipart/form-data.',
+        security: bearer,
+        parameters: [idParam],
+        requestBody: {
+          required: true,
+          content: {
+            'multipart/form-data': {
+              schema: {
+                type: 'object',
+                required: ['image'],
+                properties: {
+                  image: { type: 'string', format: 'binary' },
+                  isPrimary: { type: 'boolean', default: false }
+                }
+              }
+            }
+          }
+        },
+        responses: { 201: jsonResponse('Fotografía subida', envelope(ref('PetImage'))), ...pick(400, 401, 403, 404, 422) }
+      }
+    },
+
     '/auth/register': {
       post: {
         tags: ['Autenticación'],
         summary: 'Registrar adoptante o refugio',
         requestBody: jsonBody({
           type: 'object',
-          required: ['firstName', 'lastName', 'email', 'password', 'city'],
+          required: ['firstName', 'lastName', 'email', 'password', 'city', 'acceptedTerms', 'acceptedPrivacy'],
           properties: {
             firstName: { type: 'string' },
             lastName: { type: 'string' },
@@ -423,7 +543,9 @@ export const openapi = {
             phone: { type: 'string' },
             address: { type: 'string' },
             city: { type: 'string' },
-            role: { type: 'string', enum: ['ADOPTANTE', 'REFUGIO'], default: 'ADOPTANTE' }
+            role: { type: 'string', enum: ['ADOPTANTE', 'REFUGIO'], default: 'ADOPTANTE' },
+            acceptedTerms: { type: 'boolean', enum: [true], description: 'Aceptación de los términos' },
+            acceptedPrivacy: { type: 'boolean', enum: [true], description: 'Aceptación de la política de privacidad' }
           }
         }),
         responses: {

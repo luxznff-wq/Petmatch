@@ -39,7 +39,9 @@ describe('Autenticación', () => {
         lastName: 'Persona',
         email: 'repetido@example.com',
         password: 'Clave123',
-        city: 'Lima'
+        city: 'Lima',
+        acceptedTerms: true,
+        acceptedPrivacy: true
       })
       .expect(409);
     assert.match(response.body.message, /ya está registrado/i);
@@ -53,7 +55,9 @@ describe('Autenticación', () => {
         lastName: 'Pérez',
         email: 'debil@example.com',
         password: 'todominuscula',
-        city: 'Lima'
+        city: 'Lima',
+        acceptedTerms: true,
+        acceptedPrivacy: true
       })
       .expect(422);
 
@@ -70,6 +74,8 @@ describe('Autenticación', () => {
         email: 'intruso@example.com',
         password: 'Clave123',
         city: 'Lima',
+        acceptedTerms: true,
+        acceptedPrivacy: true,
         role: 'ADMINISTRADOR'
       })
       .expect(422);

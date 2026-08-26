@@ -7,6 +7,11 @@ const map = (row) =>
     petId: row.pet_id,
     url: row.url,
     isPrimary: row.is_primary,
+    // `storageKey` sólo existe cuando el archivo es nuestro; las imágenes
+    // registradas como enlace externo lo dejan a null.
+    storageKey: row.storage_key ?? null,
+    mimeType: row.mime_type ?? null,
+    sizeBytes: row.size_bytes ?? null,
     createdAt: row.created_at
   };
 
@@ -30,7 +35,7 @@ export async function listByPet(petId) {
  * desmarca la anterior dentro de la misma transacción, de modo que el índice
  * único `pet_images_one_primary` nunca se viola.
  */
-export async function add(petId, { url, isPrimary = false }) {
+export async function add(petId, { url, isPrimary = false, storageKey = null, mimeType = null, sizeBytes = null }) {
   if (!isPostgres) {
     if (isPrimary) {
       store.petImages
@@ -44,6 +49,9 @@ export async function add(petId, { url, isPrimary = false }) {
       petId: Number(petId),
       url,
       isPrimary,
+      storageKey,
+      mimeType,
+      sizeBytes,
       createdAt: new Date().toISOString()
     };
     store.petImages.push(image);
@@ -57,8 +65,9 @@ export async function add(petId, { url, isPrimary = false }) {
       ]);
     }
     const { rows } = await client.query(
-      'INSERT INTO pet_images (pet_id, url, is_primary) VALUES ($1, $2, $3) RETURNING *',
-      [Number(petId), url, isPrimary]
+      `INSERT INTO pet_images (pet_id, url, is_primary, storage_key, mime_type, size_bytes)
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      [Number(petId), url, isPrimary, storageKey, mimeType, sizeBytes]
     );
     return map(rows[0]);
   });

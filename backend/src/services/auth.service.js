@@ -1,8 +1,10 @@
 import bcrypt from 'bcryptjs';
 import { env } from '../config/env.js';
+import { LEGAL_VERSION } from '../config/legal.js';
 import { ApiError } from '../utils/api-error.js';
 import { signToken } from '../middleware/authenticate.js';
 import * as userModel from '../models/user.model.js';
+import { sendVerification } from './account.service.js';
 
 /**
  * Hash válido pero inalcanzable, usado sólo para igualar el coste del login
@@ -22,7 +24,14 @@ export async function register(input) {
   if (existing) throw ApiError.conflict('El correo ya está registrado');
 
   const passwordHash = await bcrypt.hash(input.password, env.bcryptRounds);
-  const user = await userModel.create(input, passwordHash);
+  // La versión legal aceptada se guarda junto a la cuenta: así queda
+  // constancia de a qué texto concreto se comprometió cada persona.
+  const user = await userModel.create({ ...input, legalVersion: LEGAL_VERSION }, passwordHash);
+
+  // El correo de confirmación no bloquea el registro: si el envío falla, la
+  // cuenta ya existe y siempre puede pedirse otro enlace.
+  await sendVerification(user).catch(() => {});
+
   return { user: toPublicUser(user), token: signToken(user) };
 }
 

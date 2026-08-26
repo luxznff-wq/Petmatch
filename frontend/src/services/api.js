@@ -52,8 +52,10 @@ export function onUnauthorized(handler) {
   return () => unauthorizedHandlers.delete(handler);
 }
 
-async function request(path, { method = 'GET', body, signal, raw = false } = {}) {
+async function request(path, { method = 'GET', body, formData, signal, raw = false } = {}) {
   const headers = { Accept: 'application/json' };
+  // Con FormData no se declara el Content-Type: el navegador lo compone con
+  // el `boundary` del multipart, y fijarlo a mano rompería la petición.
   if (body !== undefined) headers['Content-Type'] = 'application/json';
 
   const token = getToken();
@@ -65,7 +67,7 @@ async function request(path, { method = 'GET', body, signal, raw = false } = {})
       method,
       headers,
       signal,
-      body: body === undefined ? undefined : JSON.stringify(body)
+      body: formData ?? (body === undefined ? undefined : JSON.stringify(body))
     });
   } catch (error) {
     if (error.name === 'AbortError') throw error;
@@ -114,6 +116,18 @@ export const authApi = {
   changePassword: (data) => request('/auth/password', { method: 'PATCH', body: data })
 };
 
+export const accountApi = {
+  forgotPassword: (email) => request('/account/forgot-password', { method: 'POST', body: { email } }),
+  resetPassword: (data) => request('/account/reset-password', { method: 'POST', body: data }),
+  verifyEmail: (token) => request('/account/verify-email', { method: 'POST', body: { token } }),
+  resendVerification: () => request('/account/verify-email/resend', { method: 'POST' }),
+  deleteAccount: (data) => request('/account/me', { method: 'DELETE', body: data })
+};
+
+export const legalApi = {
+  info: () => request('/legal')
+};
+
 export const petsApi = {
   list: (filters, signal) => request(`/pets${toQuery(filters)}`, { raw: true, signal }),
   get: (id) => request(`/pets/${id}`),
@@ -123,7 +137,17 @@ export const petsApi = {
   remove: (id) => request(`/pets/${id}`, { method: 'DELETE' }),
   images: (id) => request(`/pets/${id}/images`),
   addImage: (id, data) => request(`/pets/${id}/images`, { method: 'POST', body: data }),
-  removeImage: (id, imageId) => request(`/pets/${id}/images/${imageId}`, { method: 'DELETE' })
+  removeImage: (id, imageId) => request(`/pets/${id}/images/${imageId}`, { method: 'DELETE' }),
+  /**
+   * Sube un archivo real. No se fija `Content-Type`: el navegador debe
+   * ponerlo él para incluir el `boundary` del multipart.
+   */
+  uploadImage: (id, file, isPrimary = false) => {
+    const form = new FormData();
+    form.append('image', file);
+    form.append('isPrimary', String(isPrimary));
+    return request(`/pets/${id}/images/upload`, { method: 'POST', formData: form });
+  }
 };
 
 export const sheltersApi = {

@@ -70,6 +70,14 @@ automatizadas, uso profesional de Git/GitHub y despliegue.
 - Perfil completo de la mascota con galería, información médica y compatibilidad.
 - Directorio de refugios verificados y perfil público con contadores.
 
+### Cuenta y privacidad
+- Verificación de la dirección de correo y **recuperación de contraseña** por
+  enlace de un solo uso con caducidad.
+- Aceptación explícita y versionada de los [Términos y condiciones](frontend/src/pages/legal/TermsPage.jsx)
+  y la [Política de Privacidad](frontend/src/pages/legal/PrivacyPage.jsx) en el registro.
+- Derechos de la Ley 29733 implementados de verdad: **descargar una copia de tus
+  datos** y **eliminar la cuenta** desde el perfil.
+
 ### Adoptante
 - Favoritos con aviso cuando una mascota guardada deja de estar disponible.
 - Formulario de solicitud con datos personales, vivienda, experiencia, motivación
@@ -79,7 +87,8 @@ automatizadas, uso profesional de Git/GitHub y despliegue.
 
 ### Refugio
 - Alta del perfil y verificación por parte de un administrador.
-- CRUD de mascotas con galería de fotografías y cambio de estado.
+- CRUD de mascotas con **galería de fotografías subidas como archivo** (JPG, PNG,
+  WEBP o AVIF hasta 5 MB) o por URL, y cambio de estado.
 - Bandeja de solicitudes con el flujo completo: revisión → entrevista →
   aprobación/rechazo → registro de la adopción.
 - Dashboard con métricas y sección de estadísticas propias.
@@ -102,9 +111,11 @@ automatizadas, uso profesional de Git/GitHub y despliegue.
 | Validación | Zod |
 | Seguridad | Helmet · CORS · express-rate-limit |
 | Documentación | OpenAPI 3.0.3 · Swagger UI |
+| Correo | Nodemailer (SMTP, con salida a consola en desarrollo) |
+| Archivos | Multer (disco local; objeto en producción) |
 | Testing | `node:test` + Supertest (backend) · Vitest + Testing Library (frontend) |
 | Calidad | ESLint 9 (flat config) + plugins de React |
-| Infraestructura | Docker Compose · Render · Vercel |
+| Infraestructura | Docker Compose · GitHub Actions · Render · Vercel |
 
 > **Nota sobre el runner de pruebas.** La especificación sugiere Jest; el proyecto
 > usa el runner nativo de Node (`node --test`) junto a Supertest. Cubre lo mismo
@@ -132,6 +143,7 @@ demostración. Como las reglas viven en los servicios y no en los modelos, ambos
 modos se comportan igual: **la misma suite de pruebas pasa contra los dos**.
 
 Documentación ampliada:
+- [`docs/github.md`](docs/github.md) — publicar el repo, Issues, Milestones y Releases.
 - [`docs/architecture/`](docs/architecture/README.md) — capas, decisiones y flujos.
 - [`docs/database/`](docs/database/README.md) — modelo relacional y diagrama ER.
 - [`docs/api/`](docs/api/README.md) — referencia de endpoints.
@@ -198,6 +210,10 @@ Todas están documentadas en [`.env.example`](.env.example). Las esenciales:
 | `API_URL` | No | URL pública de la API mostrada en Swagger. |
 | `BCRYPT_ROUNDS` | No | Coste del hash de contraseñas (por defecto `12`). |
 | `VITE_API_URL` | En producción | URL de la API que consume el frontend. |
+| `SMTP_HOST` y afines | Recomendada | Correo real. Sin ella, los mensajes se imprimen en la consola. |
+| `UPLOAD_DIR` | No | Dónde se guardan las fotografías (por defecto `uploads/`). |
+| `REDIS_URL` | Si hay >1 instancia | Contador compartido para los límites de peticiones. |
+| `LEGAL_*` | **Antes de publicar** | Datos del responsable en los documentos legales. |
 
 En producción la aplicación **se niega a arrancar** sin `DATABASE_URL` y
 `JWT_SECRET`, para no usar el secreto de desarrollo por descuido.
@@ -205,9 +221,9 @@ El archivo `.env` está en `.gitignore` y nunca debe subirse al repositorio.
 
 ## Base de datos
 
-Doce tablas relacionadas: `roles`, `users`, `shelters`, `pets`, `pet_images`,
+Trece tablas relacionadas: `roles`, `users`, `shelters`, `pets`, `pet_images`,
 `pet_attributes`, `favorites`, `adoption_requests`, `adoption_interviews`,
-`adoptions`, `notifications` y `audit_logs`.
+`adoptions`, `notifications`, `audit_logs` y `auth_tokens`.
 
 ```bash
 npm run db:migrate   # aplica las migraciones pendientes (idempotente)
@@ -254,9 +270,10 @@ Códigos usados: `200` `201` `204` `400` `401` `403` `404` `409` `422` `500`.
 | Recurso | Endpoints |
 | --- | --- |
 | Autenticación | `POST /auth/register` · `POST /auth/login` · `POST /auth/logout` · `GET /auth/me` · `PATCH /auth/password` |
+| Cuenta | `POST /account/forgot-password` · `POST /account/reset-password` · `POST /account/verify-email` · `GET /account/me/export` · `DELETE /account/me` |
 | Usuarios | `GET /users` · `GET /users/:id` · `PUT /users/:id` · `PATCH /users/:id/status` · `DELETE /users/:id` |
 | Mascotas | `GET /pets` · `GET /pets/:id` · `POST /pets` · `PUT /pets/:id` · `PATCH /pets/:id/status` · `DELETE /pets/:id` |
-| Imágenes | `GET /pets/:id/images` · `POST /pets/:id/images` · `DELETE /pets/:id/images/:imageId` |
+| Imágenes | `GET /pets/:id/images` · `POST /pets/:id/images` · `POST /pets/:id/images/upload` · `DELETE /pets/:id/images/:imageId` |
 | Favoritos | `GET /favorites` · `GET /favorites/ids` · `POST /favorites/:petId` · `DELETE /favorites/:petId` |
 | Solicitudes | `GET /adoptions/requests` · `GET /adoptions/requests/:id` · `POST /adoptions/requests` · `PATCH /adoptions/requests/:id/status` · `DELETE /adoptions/requests/:id` |
 | Entrevistas | `GET /adoptions/requests/:id/interviews` · `POST /adoptions/requests/:id/interviews` · `GET /interviews` · `PUT /interviews/:id` |
@@ -265,7 +282,7 @@ Códigos usados: `200` `201` `204` `400` `401` `403` `404` `409` `422` `500`.
 | Notificaciones | `GET /notifications` · `PATCH /notifications/:id/read` · `PATCH /notifications/read-all` |
 | Reportes | `GET /reports/adoptions` · `GET /reports/pets` · `GET /reports/requests` · `GET /reports/shelters` |
 | Administración | `GET /admin/dashboard` · `GET /admin/audit` · `GET /admin/users` · `GET /admin/shelters` |
-| Generales | `GET /health` · `GET /stats` · `GET /workspace` |
+| Generales | `GET /health` · `GET /stats` · `GET /legal` · `GET /workspace` |
 
 Ejemplos de filtros:
 
@@ -300,27 +317,30 @@ para demostrar el flujo de aprobación desde el panel administrativo.
 ## Calidad y testing
 
 ```bash
-npm test           # lint + 105 pruebas de API + 33 de interfaz
+npm test           # lint + 131 pruebas de API + 40 de interfaz
 npm run lint       # ESLint sobre backend y frontend
-npm run test:api   # 105 pruebas de API
-npm run test:web   # 33 pruebas de interfaz
+npm run test:api   # 131 pruebas de API
+npm run test:web   # 40 pruebas de interfaz
 ```
 
 **Linting.** ESLint 9 en formato plano ([`eslint.config.js`](eslint.config.js)) con
 reglas compartidas más `eslint-plugin-react` y `eslint-plugin-react-hooks` para el
 frontend. `npm test` lo ejecuta primero: si el lint falla, no se corren las pruebas.
 
-**Backend (105 pruebas).** Autenticación, roles y permisos, CRUD de mascotas,
+**Backend (131 pruebas).** Autenticación, roles y permisos, CRUD de mascotas,
 búsqueda/filtros/orden/paginación, galería, favoritos, flujo completo de adopción,
 transiciones inválidas, notificaciones, auditoría, reportes, contrato de la API,
-caminos administrativos, borrado en cascada, búsqueda de texto y límites de peticiones. Incluye los casos negativos que pide
+caminos administrativos, borrado en cascada, búsqueda de texto, límites de peticiones,
+recuperación de contraseña, verificación de correo, consentimiento legal, derechos
+sobre los datos y subida de archivos. Incluye los casos negativos que pide
 la especificación: email duplicado, contraseña incorrecta, token inválido, mascota
 inexistente, mascota adoptada, solicitud duplicada, usuario sin permisos y datos
 incompletos.
 
-**Frontend (33 pruebas).** Componentes reutilizables, tarjetas de mascota, tabla de
+**Frontend (40 pruebas).** Componentes reutilizables, tarjetas de mascota, tabla de
 datos, paginación, protección de rutas, accesibilidad del diálogo modal (retención
-del foco), pantalla de error y las páginas de exploración y acceso.
+del foco), pantalla de error, consentimiento en el registro, recuperación de
+contraseña y las páginas de exploración y acceso.
 
 Las pruebas de backend corren contra el almacén en memoria por defecto. Para
 verificarlas contra PostgreSQL real:
@@ -395,6 +415,7 @@ petmatch/
 ├── database/
 │   └── migrations/        # Migraciones SQL versionadas
 ├── docker/                # Dockerfiles y configuración de nginx
+├── .github/               # CI y plantillas de Issues y Pull Requests
 ├── docs/                  # api/ · database/ · architecture/ · deployment
 ├── docker-compose.yml
 ├── render.yaml

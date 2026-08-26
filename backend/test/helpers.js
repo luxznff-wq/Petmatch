@@ -46,6 +46,9 @@ export async function registerUser(overrides = {}) {
     email: `ana.${suffix}@example.com`,
     password,
     city: 'Lima',
+    // El registro exige aceptación explícita de los documentos legales.
+    acceptedTerms: true,
+    acceptedPrivacy: true,
     ...overrides
   };
 
