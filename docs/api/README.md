@@ -35,9 +35,15 @@ inválida · `401` No autenticado · `403` Sin permisos · `404` No encontrado �
   "password": "Clave123",     // 8+ caracteres, mayúscula, minúscula y número
   "phone": "+51 999 888 777", // opcional
   "city": "Lima",
-  "role": "ADOPTANTE"          // ADOPTANTE | REFUGIO
+  "role": "ADOPTANTE",         // ADOPTANTE | REFUGIO
+  "acceptedTerms": true,       // obligatorio: debe ser exactamente true
+  "acceptedPrivacy": true      // obligatorio: debe ser exactamente true
 }
 ```
+
+La aceptación de ambos documentos es obligatoria y se guarda con su fecha y la
+versión vigente. Tras el registro se envía un correo de confirmación; si el
+envío falla, la cuenta se crea igualmente y puede pedirse otro enlace.
 
 `201` → `{ user, token }`. `409` si el correo ya existe, `422` si los datos no
 cumplen las reglas. El rol `ADMINISTRADOR` **no** se acepta.
@@ -61,6 +67,43 @@ endpoint existe para completar el contrato de la API.
 
 `{ "currentPassword": "...", "newPassword": "..." }` → `200`. `401` si la
 contraseña actual no es correcta.
+
+---
+
+## Cuenta
+
+### `POST /account/forgot-password`
+
+`{ "email": "..." }` → `200` siempre, exista o no la cuenta. Distinguir ambos
+casos permitiría averiguar qué correos están registrados. El enlace caduca en
+una hora y sólo puede usarse una vez.
+
+### `POST /account/reset-password`
+
+`{ "token": "...", "newPassword": "..." }` → `200`. `400` si el enlace no es
+válido, ya se usó o caducó. Pedir un enlace nuevo invalida el anterior.
+
+### `POST /account/verify-email`
+
+`{ "token": "..." }` → `200` con el perfil actualizado.
+
+### `POST /account/verify-email/resend` 🔒
+
+Reenvía el correo de confirmación. `409` si ya está verificado.
+
+### `GET /account/me/export` 🔒
+
+Descarga un JSON con todos los datos de la cuenta: perfil, refugio, favoritos,
+solicitudes, entrevistas, adopciones y notificaciones. Nunca incluye el hash de
+la contraseña. Corresponde a los derechos de acceso y portabilidad (Ley 29733).
+
+### `DELETE /account/me` 🔒
+
+`{ "password": "...", "confirmation": "ELIMINAR" }` → `204`.
+
+Derecho de cancelación. Exige la contraseña porque es irreversible: arrastra
+favoritos, solicitudes abiertas y notificaciones. Se rechaza con `409` si la
+cuenta tiene adopciones registradas, para no destruir el historial (§38).
 
 ---
 
@@ -133,8 +176,17 @@ eliminar una mascota ya adoptada (`409`): forma parte del historial.
 ### Galería
 
 - `GET /pets/:id/images` — público
-- `POST /pets/:id/images` 🔒 — `{ "url": "https://…", "isPrimary": false }`
+- `POST /pets/:id/images` 🔒 — enlace externo: `{ "url": "https://…", "isPrimary": false }`
+- `POST /pets/:id/images/upload` 🔒 — **subida de archivo** (`multipart/form-data`)
 - `DELETE /pets/:id/images/:imageId` 🔒
+
+La subida acepta JPG, PNG, WEBP y AVIF hasta 5 MB, en el campo `image`. El
+nombre del archivo se genera en el servidor: nunca se conserva el que envía el
+cliente. Al borrar la fotografía se elimina también el archivo del disco.
+
+```bash
+curl -X POST http://localhost:4000/api/pets/3/images/upload   -H "Authorization: Bearer <token>"   -F "image=@luna.jpg" -F "isPrimary=true"
+```
 
 Marcar una imagen como principal desmarca la anterior en la misma transacción.
 
@@ -324,6 +376,7 @@ Cada agrupación es una lista de `{ "label": "...", "total": 0 }`.
 | --- | --- | --- |
 | `GET /health` | Público | Estado y motor de persistencia activo |
 | `GET /stats` | Público | Totales de la portada: mascotas, adopciones, refugios, ciudades |
+| `GET /legal` | Público | Versión vigente de los documentos legales y datos del responsable |
 | `GET /workspace` | 🔒 | Datos completos del panel según el rol, en una sola petición |
 
 `/workspace` no está en la especificación funcional: existe para que cada panel se

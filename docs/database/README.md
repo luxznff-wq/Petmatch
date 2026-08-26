@@ -1,7 +1,7 @@
 # Modelo de datos
 
-Doce tablas relacionadas que cubren usuarios, refugios, mascotas, el proceso de
-adopción y la trazabilidad del sistema.
+Trece tablas relacionadas que cubren usuarios, refugios, mascotas, el proceso de
+adopción, la trazabilidad del sistema y los enlaces de un solo uso.
 
 ## Diagrama entidad-relación
 
@@ -204,6 +204,17 @@ que ya comparaba sin acentos. Sin él, buscar "peru" no encontraba "Huellitas Pe
 en PostgreSQL pero sí en memoria — justo la clase de divergencia que la
 arquitectura pretende evitar.
 
+**Tokens guardados como hash.** `auth_tokens` almacena el SHA-256 del enlace de
+verificación o de recuperación, nunca el valor en claro. Quien consiga leer la base
+de datos no puede suplantar a nadie, igual que ocurre con las contraseñas. Cada
+token es de un solo uso —tiene `used_at`— y caduca: 24 horas para verificar el
+correo, una hora para restablecer la contraseña.
+
+**Consentimiento versionado.** `users` guarda cuándo se aceptaron los términos y la
+política, y con qué versión (`legal_version`). Sin la versión no se podría saber a
+qué texto se comprometió cada persona: si el documento cambia de forma sustancial,
+el consentimiento anterior deja de cubrirlo y hay que volver a pedirlo.
+
 **Auditoría con correo desnormalizado.** `audit_logs` guarda `user_email` además de
 `user_id`, y la clave foránea usa `ON DELETE SET NULL`: si una cuenta se elimina, la
 evidencia de qué hizo sigue siendo legible.
@@ -238,6 +249,7 @@ Además de las claves primarias y únicas, se indexa lo que realmente se filtra:
 | `004_activity.sql` | `notifications`, `audit_logs` |
 | `005_indexes_and_triggers.sql` | Índices y triggers de mantenimiento |
 | `006_search_indexes.sql` | Columna `search_text`, triggers e índices GIN de búsqueda |
+| `007_accounts_legal_and_files.sql` | Verificación de correo, aceptación legal, `auth_tokens` y metadatos de archivos |
 
 El ejecutor (`backend/src/scripts/migrate.js`) registra cada archivo aplicado en
 `schema_migrations` y envuelve cada uno en su propia transacción. Volver a

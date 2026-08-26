@@ -91,6 +91,21 @@ Sirve `frontend/dist` con nginx (hay una configuración de ejemplo en
 [`docker/nginx.conf`](../docker/nginx.conf)) y usa un gestor de procesos como
 systemd o PM2 para la API.
 
+## Antes de abrir al público
+
+Estos puntos no son opcionales si la plataforma va a recibir usuarios reales:
+
+| Punto | Por qué | Cómo |
+| --- | --- | --- |
+| **Datos del responsable legal** | Los documentos legales llevan marcadores de posición; sin datos reales no cumplen la Ley 29733 | Define `LEGAL_ORGANIZATION`, `LEGAL_CONTACT_EMAIL` y `LEGAL_ADDRESS` |
+| **Revisión legal de los textos** | Los redactamos como borrador informado, no como asesoría | Que los revise alguien cualificado antes de publicarlos |
+| **SMTP real** | Sin él la recuperación de contraseña no llega a nadie | Define `SMTP_HOST` y credenciales |
+| **Almacenamiento persistente de imágenes** | El disco de Render es efímero: las fotos desaparecen en cada despliegue | Monta un disco persistente y apunta `UPLOAD_DIR`, o usa S3/Cloudinary |
+| **Redis** | Sin él los límites de peticiones cuentan por instancia | Define `REDIS_URL` |
+| **Copias de seguridad** | Sin ellas, un fallo de la base es irreversible | Activa los backups automáticos del proveedor |
+| **Monitorización de errores** | Hoy los errores sólo quedan en `console.error` | Conecta un servicio de seguimiento (Sentry o similar) |
+| **Contraseña del administrador** | Las del seed son públicas: están en este repositorio | Cámbiala tras el primer acceso, o no siembres datos de demostración |
+
 ## Lista de comprobación de seguridad
 
 - [ ] `JWT_SECRET` es un valor aleatorio largo, distinto en cada entorno.

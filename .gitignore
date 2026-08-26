@@ -27,3 +27,6 @@ Thumbs.db
 
 # Datos locales de PostgreSQL levantados con Docker
 docker/pgdata/
+
+# Fotografías subidas en local
+uploads/
