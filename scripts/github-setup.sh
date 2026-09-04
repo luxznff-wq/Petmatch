@@ -172,6 +172,11 @@ release v1.0.1 "PetMatch v1.0.1" "Correcciones de la auditoría de calidad y ESL
 release v1.0.2 "PetMatch v1.0.2" "Carga correcta de variables de entorno y aislamiento de las pruebas."
 release v1.0.3 "PetMatch v1.0.3" "Búsqueda indexable, foco del modal, pantalla de error y límites de peticiones."
 release v1.1.0 "PetMatch v1.1.0" "Recuperación de contraseña, verificación de correo, subida de imágenes, documentos legales e integración continua."
+release v1.2.0 "PetMatch v1.2.0" "Carga por ruta, cobertura de los tres paneles y script de publicación en GitHub."
+release v1.2.1 "PetMatch v1.2.1" "Documentos legales alcanzables desde la barra lateral de los paneles."
+release v1.3.0 "PetMatch v1.3.0" "Refugio suspendido bloqueado en el flujo, fechas de entrevista y comodines de LIKE."
+release v1.4.0 "PetMatch v1.4.0" "Cambios de estado atómicos, fechas en UTC y correo sin credenciales."
+release v1.4.1 "PetMatch v1.4.1" "Diagnóstico claro cuando la base de datos no responde."
 
 # --------------------------------------------------- 5. Protección de main
 
