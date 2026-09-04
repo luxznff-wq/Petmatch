@@ -325,9 +325,9 @@ para demostrar el flujo de aprobación desde el panel administrativo.
 ## Calidad y testing
 
 ```bash
-npm test           # lint + 158 pruebas de API + 134 de interfaz
+npm test           # lint + 159 pruebas de API + 134 de interfaz
 npm run lint       # ESLint sobre backend y frontend
-npm run test:api   # 158 pruebas de API
+npm run test:api   # 159 pruebas de API
 npm run test:web   # 134 pruebas de interfaz
 ```
 
@@ -335,7 +335,7 @@ npm run test:web   # 134 pruebas de interfaz
 reglas compartidas más `eslint-plugin-react` y `eslint-plugin-react-hooks` para el
 frontend. `npm test` lo ejecuta primero: si el lint falla, no se corren las pruebas.
 
-**Backend (158 pruebas).** Autenticación, roles y permisos, CRUD de mascotas,
+**Backend (159 pruebas).** Autenticación, roles y permisos, CRUD de mascotas,
 búsqueda/filtros/orden/paginación, galería, favoritos, flujo completo de adopción,
 transiciones inválidas, notificaciones, auditoría, reportes, contrato de la API,
 caminos administrativos, borrado en cascada, búsqueda de texto, límites de peticiones,
