@@ -255,4 +255,43 @@ describe('Panel administrativo', () => {
     const stats = await api.get('/api/stats').expect(200);
     assert.deepEqual(stats.body.data, { pets: 1, adoptions: 1, shelters: 1, cities: 1 });
   });
+
+  test('las cifras públicas cuentan sólo los refugios que el directorio muestra', async () => {
+    const admin = await createAdmin();
+    await createVerifiedShelter(admin, {
+      owner: { email: 'contado@example.com' },
+      shelter: { name: 'Refugio Verificado' }
+    });
+
+    const pendingOwner = await registerUser({ role: 'REFUGIO', email: 'nocontado@example.com' });
+    await api
+      .post('/api/shelters')
+      .set(auth(pendingOwner.token))
+      .send({ name: 'Refugio Pendiente', city: 'Cusco' })
+      .expect(201);
+
+    const suspendedOwner = await registerUser({ role: 'REFUGIO', email: 'suspendido@example.com' });
+    const suspended = (
+      await api
+        .post('/api/shelters')
+        .set(auth(suspendedOwner.token))
+        .send({ name: 'Refugio Suspendido', city: 'Piura' })
+        .expect(201)
+    ).body.data;
+    await api
+      .patch(`/api/shelters/${suspended.id}/status`)
+      .set(auth(admin.token))
+      .send({ status: 'SUSPENDIDO' })
+      .expect(200);
+
+    const stats = await api.get('/api/stats').expect(200);
+    const directory = await api.get('/api/shelters').expect(200);
+
+    assert.equal(stats.body.data.shelters, 1);
+    assert.equal(stats.body.data.shelters, directory.body.data.length);
+
+    // El panel administrativo sigue viendo el total real.
+    const summary = await api.get('/api/admin/dashboard').set(auth(admin.token)).expect(200);
+    assert.equal(summary.body.data.shelters, 3);
+  });
 });

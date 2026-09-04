@@ -214,8 +214,22 @@ export async function setStatus(id, status) {
   );
 }
 
-export async function countAll() {
-  if (!isPostgres) return store.shelters.length;
-  const row = await queryOne('SELECT count(*)::int AS total FROM shelters');
+/**
+ * Cuenta refugios, opcionalmente los de un estado concreto.
+ *
+ * Sin `status` cuenta todos, que es lo que necesita el panel administrativo;
+ * las cifras públicas piden `VERIFICADO` para no anunciar refugios que el
+ * directorio no muestra.
+ */
+export async function countAll({ status } = {}) {
+  if (!isPostgres) {
+    return status
+      ? store.shelters.filter((shelter) => shelter.status === status).length
+      : store.shelters.length;
+  }
+  const row = await queryOne(
+    'SELECT count(*)::int AS total FROM shelters WHERE $1::shelter_status IS NULL OR status = $1',
+    [status ?? null]
+  );
   return row.total;
 }
