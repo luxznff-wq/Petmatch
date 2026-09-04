@@ -59,3 +59,21 @@ export async function transaction(fn) {
 export async function closePool() {
   if (pool) await pool.end();
 }
+
+/**
+ * Comprueba que la base de datos responde.
+ *
+ * Se llama al arrancar: si `DATABASE_URL` apunta a un servidor que no existe
+ * —lo típico al copiar el proyecto a otro equipo, porque el `.env` viaja con
+ * la carpeta— más vale decirlo en ese momento que dejar que cada petición
+ * falle con un error genérico.
+ */
+export async function checkConnection() {
+  if (!isPostgres) return { ok: true, mode: 'memoria' };
+  try {
+    const row = await queryOne('SELECT current_database() AS db');
+    return { ok: true, mode: 'postgresql', database: row.db };
+  } catch (error) {
+    return { ok: false, mode: 'postgresql', error };
+  }
+}

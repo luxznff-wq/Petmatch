@@ -20,6 +20,24 @@ function translateBodyParserError(error) {
   return null;
 }
 
+/**
+ * Un fallo de conexión no es culpa de quien usa la API: se responde 503 y se
+ * dice qué pasa, en lugar del 500 genérico que obliga a adivinar. Fuera de
+ * producción se añade la pista concreta, porque el caso habitual —haber
+ * copiado el proyecto a otro equipo— se resuelve en un minuto si se sabe.
+ */
+const CONNECTION_CODES = new Set(['ECONNREFUSED', 'ENOTFOUND', 'ETIMEDOUT', '57P03', '3D000', '28P01']);
+
+function translateConnectionError(error) {
+  if (!CONNECTION_CODES.has(error.code)) return null;
+
+  const pista = env.isProduction
+    ? ''
+    : ' Revisa DATABASE_URL en el archivo .env, o quítala para usar el modo memoria.';
+
+  return new ApiError(503, `La base de datos no está disponible.${pista}`);
+}
+
 /** Traduce los errores propios de PostgreSQL a errores de negocio. */
 function translateDatabaseError(error) {
   switch (error.code) {
@@ -45,7 +63,9 @@ export function errorHandler(error, _req, res, _next) {
   const apiError =
     error instanceof ApiError
       ? error
-      : translateBodyParserError(error) ?? translateDatabaseError(error);
+      : translateBodyParserError(error) ??
+        translateConnectionError(error) ??
+        translateDatabaseError(error);
 
   if (!apiError) {
     if (!env.isTest) console.error('[PetMatch] Error no controlado:', error);

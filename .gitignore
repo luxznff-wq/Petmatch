@@ -30,3 +30,10 @@ docker/pgdata/
 
 # Fotografías subidas en local
 uploads/
+
+# Volcados de la base de datos generados para compartir.
+# La fuente de verdad del esquema son database/migrations/.
+entrega-bd/
+
+# Clúster local de PostgreSQL para desarrollo
+.pgdata/
