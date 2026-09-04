@@ -375,7 +375,7 @@ Cada agrupación es una lista de `{ "label": "...", "total": 0 }`.
 | Endpoint | Acceso | Descripción |
 | --- | --- | --- |
 | `GET /health` | Público | Estado y motor de persistencia activo |
-| `GET /stats` | Público | Totales de la portada: mascotas, adopciones, refugios, ciudades |
+| `GET /stats` | Público | Totales de la portada: mascotas, adopciones, refugios **verificados** y ciudades |
 | `GET /legal` | Público | Versión vigente de los documentos legales y datos del responsable |
 | `GET /workspace` | 🔒 | Datos completos del panel según el rol, en una sola petición |
 

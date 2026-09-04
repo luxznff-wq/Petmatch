@@ -402,7 +402,10 @@ export const openapi = {
               properties: {
                 pets: { type: 'integer' },
                 adoptions: { type: 'integer' },
-                shelters: { type: 'integer' },
+                shelters: {
+                  type: 'integer',
+                  description: 'Sólo los refugios verificados, los mismos que lista GET /shelters'
+                },
                 cities: { type: 'integer' }
               }
             })
