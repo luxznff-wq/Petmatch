@@ -1,5 +1,13 @@
 # PetMatch 🐾
 
+<!-- Con el repositorio en privado, la insignia de estado de GitHub no se puede
+     mostrar: el proxy de imágenes la pide sin autenticación y recibe un 404.
+     Al hacer público el repositorio, sustituye la línea de abajo por:
+     [![CI](https://github.com/luxznff-wq/Petmatch/actions/workflows/ci.yml/badge.svg)](https://github.com/luxznff-wq/Petmatch/actions/workflows/ci.yml) -->
+
+[Integración continua](https://github.com/luxznff-wq/Petmatch/actions/workflows/ci.yml) ·
+[Releases](https://github.com/luxznff-wq/Petmatch/releases)
+
 **Plataforma web full-stack de gestión y adopción responsable de mascotas.**
 
 PetMatch conecta a personas que quieren adoptar con refugios que necesitan encontrar
@@ -143,7 +151,7 @@ demostración. Como las reglas viven en los servicios y no en los modelos, ambos
 modos se comportan igual: **la misma suite de pruebas pasa contra los dos**.
 
 Documentación ampliada:
-- [`docs/github.md`](docs/github.md) — publicar el repo, Issues, Milestones y Releases.
+- [`docs/github.md`](docs/github.md) — estado del repositorio: Issues, Milestones y Releases.
 - [`docs/architecture/`](docs/architecture/README.md) — capas, decisiones y flujos.
 - [`docs/database/`](docs/database/README.md) — modelo relacional y diagrama ER.
 - [`docs/api/`](docs/api/README.md) — referencia de endpoints.
@@ -159,8 +167,8 @@ Documentación ampliada:
 ### Pasos
 
 ```bash
-git clone <url-del-repositorio>
-cd petmatch
+git clone https://github.com/luxznff-wq/Petmatch.git
+cd Petmatch
 
 # 1. Dependencias (monorepo con workspaces: instala backend y frontend)
 npm install
@@ -357,6 +365,9 @@ DATABASE_URL=postgresql://postgres:postgres@localhost:5432/petmatch_test npm run
 > archivos comparten la misma base de datos y cada uno la limpia antes de empezar.
 
 ## Flujo de trabajo con Git
+
+Repositorio: <https://github.com/luxznff-wq/Petmatch> — 10 releases, 8 milestones
+y 36 issues cerrados. Detalle en [`docs/github.md`](docs/github.md).
 
 Ramas: `main` (estable) y `develop` (integración); el trabajo se hace en
 `feature/*` y se integra con merges sin *fast-forward* para conservar la historia.
