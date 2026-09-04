@@ -46,7 +46,7 @@ export default function HomePage() {
   const metrics = [
     { icon: PawPrint, value: stats.data?.pets, label: 'Mascotas registradas' },
     { icon: Heart, value: stats.data?.adoptions, label: 'Adopciones realizadas' },
-    { icon: Building2, value: stats.data?.shelters, label: 'Refugios registrados' },
+    { icon: Building2, value: stats.data?.shelters, label: 'Refugios verificados' },
     { icon: MapPin, value: stats.data?.cities, label: 'Ciudades disponibles' }
   ];
 

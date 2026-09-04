@@ -26,7 +26,10 @@ export async function publicStats() {
   const [pets, adoptions, shelters, cities] = await Promise.all([
     petModel.countAll(),
     adoptionModel.countAll(),
-    shelterModel.countAll(),
+    // Sólo los verificados: son los únicos que aparecen en el directorio, y
+    // anunciar más en la portada que los que se pueden abrir es una
+    // contradicción visible desde la primera pantalla.
+    shelterModel.countAll({ status: 'VERIFICADO' }),
     reportModel.distinctPetCities()
   ]);
   return { pets, adoptions, shelters, cities };
