@@ -74,7 +74,7 @@ npm run dev
 ## 5. Alternativa: servidor propio
 
 ```bash
-git clone <repositorio> && cd petmatch
+git clone https://github.com/luxznff-wq/Petmatch.git && cd Petmatch
 npm ci
 npm run build -w frontend
 
