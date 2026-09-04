@@ -14,9 +14,10 @@ export const LEGAL_UPDATED_AT = '2026-08-25';
 /**
  * Datos del responsable del tratamiento.
  *
- * ATENCIÓN: son marcadores de posición. Antes de publicar la plataforma hay
- * que sustituirlos por los datos reales de la organización responsable; sin
- * ellos los documentos no cumplen la Ley 29733.
+ * Se toman de las variables `LEGAL_*` del entorno. Los valores por defecto son
+ * marcadores de posición: si la plataforma se publica de verdad hay que
+ * definir las variables con los datos de la organización responsable, porque
+ * sin un responsable identificable los documentos no cumplen la Ley 29733.
  */
 export const LEGAL_CONTACT = {
   organization: process.env.LEGAL_ORGANIZATION || 'PetMatch (proyecto académico)',
