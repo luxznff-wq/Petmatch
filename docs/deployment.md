@@ -3,27 +3,33 @@
 Arquitectura de despliegue: **frontend estático en Vercel** + **API y PostgreSQL en
 Render**. Al final hay una alternativa con Docker Compose.
 
-## 1. Base de datos y API en Render
+## 1. Base de datos en Supabase y API en Render
 
-1. Sube el repositorio a GitHub.
-2. En Render: **New → Blueprint** y selecciona el repositorio. El archivo
-   [`render.yaml`](../render.yaml) declara el servicio web y la base de datos.
-3. Render crea automáticamente:
-   - `DATABASE_URL`, tomada de la base de datos gestionada.
-   - `JWT_SECRET`, generado como valor aleatorio.
-4. Define `FRONTEND_URL` a mano cuando tengas el dominio de Vercel (paso 2.5).
-   Sin este valor, CORS rechazará las peticiones del frontend.
-5. Cuando el servicio esté desplegado, abre su **Shell** y ejecuta:
+1. En Supabase crea un proyecto (región `us-east-1`) y copia la cadena del
+   **Session pooler** (Connect → Session pooler). La conexión directa
+   `db.<ref>.supabase.co` es sólo IPv6 y Render no la alcanza.
+2. Desde tu equipo, con esa cadena en `DATABASE_URL` y una
+   `SEED_ADMIN_PASSWORD` nueva:
 
    ```bash
-   npm run db:migrate     # crea el esquema
-   npm run db:seed        # datos de demostración (opcional)
+   npm run db:migrate     # crea el esquema (incluye RLS, migración 009)
+   npm run db:seed        # administrador, refugios y adoptantes de demostración
    ```
+
+   PetMatch no usa Supabase Auth: los usuarios viven en la tabla `users`.
+   La migración 009 activa RLS para que la API automática de Supabase no
+   exponga las tablas con la clave pública.
+3. En Render: **New → Blueprint** y selecciona el repositorio. El archivo
+   [`render.yaml`](../render.yaml) declara el servicio web; `JWT_SECRET` se
+   genera solo y las migraciones pendientes se aplican en cada arranque.
+4. Define a mano `DATABASE_URL` (la del paso 1) y `FRONTEND_URL` cuando tengas
+   el dominio de Vercel (paso 2.5). Sin este valor, CORS rechazará las
+   peticiones del frontend.
 
    > Antes de sembrar en un entorno público, cambia `SEED_ADMIN_PASSWORD`: las
    > credenciales por defecto son públicas porque están en este repositorio.
 
-6. Comprueba <https://tu-api.onrender.com/api/health>. Debe responder
+5. Comprueba <https://tu-api.onrender.com/api/health>. Debe responder
    `"database": "postgresql"`. Si dice `"memory"`, falta `DATABASE_URL`.
 
 ## 2. Frontend en Vercel

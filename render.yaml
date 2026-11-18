@@ -1,21 +1,24 @@
-# Blueprint de Render: API de PetMatch + PostgreSQL gestionado.
+# Blueprint de Render: API de PetMatch. La base de datos vive en Supabase.
 # Importar desde: New > Blueprint
 services:
   - type: web
     name: petmatch-api
     runtime: node
     plan: free
+    # Misma zona que el proyecto de Supabase (us-east-1) para reducir latencia.
+    region: virginia
     rootDir: .
     buildCommand: npm ci
-    startCommand: npm run start -w backend
+    # Aplica las migraciones pendientes en cada despliegue (es idempotente).
+    startCommand: npm run db:migrate -w backend && npm run start -w backend
     healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
         value: production
+      # Cadena del "Session pooler" de Supabase (Connect > Session pooler).
+      # La conexión directa db.<ref>.supabase.co es sólo IPv6 y Render no la alcanza.
       - key: DATABASE_URL
-        fromDatabase:
-          name: petmatch-db
-          property: connectionString
+        sync: false
       - key: JWT_SECRET
         generateValue: true
       # Se define a mano con el dominio final del frontend: CORS depende de ello.
@@ -23,9 +26,3 @@ services:
         sync: false
       - key: API_URL
         sync: false
-
-databases:
-  - name: petmatch-db
-    databaseName: petmatch
-    user: petmatch
-    plan: free
